@@ -1845,6 +1845,8 @@ void NetworkTimer()
 }
 
 
+volatile long stakinghack_iterations = 0;
+volatile bool stakinghack_minimal = false;
 
 bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, 
     int64_t nFees, CTransaction& txNew, CKey& key, int64_t& out_gridreward, std::string& out_hashboinc)
@@ -2023,6 +2025,15 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             //12-6-2015 - Add PoW nonce to POR - Halford
             NetworkTimer();
 
+            double MinedNonce;
+            MinedNonce=stakinghack_iterations;
+            if(MinedNonce) {
+                CheckStakeKernelHashV3(pindexPrev, nBits, block.GetBlockTime(),
+                    *pcoin.first, prevoutStake, txNew.nTime - n, hashProofOfStake,
+                    targetProofOfStake, false, hashBoinc, true, mdPORNonce, &MinedNonce);
+                mdPORNonce = MinedNonce;
+            }
+
             if (CheckStakeKernelHash(pindexPrev, nBits, block, txindex.pos.nTxPos - txindex.pos.nBlockPos, 
                 *pcoin.first, prevoutStake, txNew.nTime - n, hashProofOfStake, 
                 targetProofOfStake, hashBoinc, fDebug, true, mdPORNonce))
@@ -2172,6 +2183,15 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
         int64_t nReward = GetProofOfStakeReward(nCoinAge,nFees,GlobalCPUMiningCPID.cpid,false,0,
             pindexBest->nTime,pindexBest,"createcoinstake",OUT_POR,out_interest,dAccrualAge,dAccrualMagnitudeUnit,dAccrualMagnitude);
+
+        if( stakinghack_minimal ){
+            double limiter = MintLimiter(GetBlockDifficulty(nBits),RSA_WEIGHT,GlobalCPUMiningCPID.cpid,GetAdjustedTime());
+            limiter += 0.01;
+            OUT_POR=std::min(OUT_POR,limiter);
+            out_interest=std::min(out_interest,limiter);
+            nReward=(OUT_POR+out_interest)*COIN;
+            printf("CreateCoinStake: Limiting Reward to minimal amount!\n");
+        }
 
         //9-2-2015 Accrual System - Reserved for Future Use
     
