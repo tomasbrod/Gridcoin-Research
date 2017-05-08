@@ -602,9 +602,10 @@ static bool CheckStakeKernelHashV1(unsigned int nBits, const CBlock& blockFrom, 
 //
 
 
-static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom,
+bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom,
     const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake,
-    uint256& targetProofOfStake, bool fPrintProofOfStake, std::string hashBoinc, bool checking_local, double por_nonce)
+    uint256& targetProofOfStake, bool fPrintProofOfStake, std::string hashBoinc, bool checking_local,
+    double por_nonce, double *mine_nonce)
 {
 
     double PORDiff = GetBlockDifficulty(nBits);
@@ -658,6 +659,28 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
     bnTarget *= bnWeight;
     targetProofOfStake = bnTarget.getuint256();
 
+    //Mine for good nonce
+    if(mine_nonce) {
+        long unsigned int mining = *mine_nonce;
+        printf("Searching for PorNonce: weight %.f and %lu iterations: [", (double)nValueIn/125000.0, mining);
+        for( ; mining>10; --mining) {
+            if((mining%32768)==0) {
+                printf("%lu ", mining/8192);
+            }
+            CDataStream ss(SER_GETHASH, 0);
+            ss << RSA_WEIGHT << nTimeBlockFrom << txPrev.nTime << prevout.hash << prevout.n
+                << nTimeTx <<  ((double)mining);
+            uint256 hashProofOfStake = Hash(ss.begin(), ss.end());
+            if (CBigNum(hashProofOfStake) <= bnTarget) {
+                *mine_nonce = mining;
+                por_nonce = mining;
+                break;
+            }
+        }
+        printf("]\n");
+        return false;
+    }
+
     // Calculate hash
     CDataStream ss(SER_GETHASH, 0);
     ss << RSA_WEIGHT << nTimeBlockFrom << txPrev.nTime << prevout.hash << prevout.n << nTimeTx <<  por_nonce;
@@ -704,7 +727,7 @@ bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBl
     uint256& targetProofOfStake, std::string hashBoinc, bool fPrintProofOfStake, bool checking_local, double por_nonce)
 {
     if (IsProtocolV2(pindexPrev->nHeight+1))
-        return CheckStakeKernelHashV3(pindexPrev, nBits, blockFrom.GetBlockTime(), txPrev, prevout, nTimeTx, hashProofOfStake, targetProofOfStake, fPrintProofOfStake, hashBoinc, checking_local, por_nonce);
+        return CheckStakeKernelHashV3(pindexPrev, nBits, blockFrom.GetBlockTime(), txPrev, prevout, nTimeTx, hashProofOfStake, targetProofOfStake, fPrintProofOfStake, hashBoinc, checking_local, por_nonce, NULL);
     else
         return CheckStakeKernelHashV1(nBits, blockFrom, nTxPrevOffset, txPrev, prevout, nTimeTx, hashProofOfStake, targetProofOfStake, fPrintProofOfStake, hashBoinc, checking_local);
 }

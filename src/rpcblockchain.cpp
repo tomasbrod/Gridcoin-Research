@@ -524,6 +524,30 @@ Value settxfee(const Array& params, bool fHelp)
     return true;
 }
 
+Value setstakehack(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 3 || params.size() > 3)
+        throw runtime_error(
+            "setstakehack <iterations:natural> <sleep:milisecond> <minimalreward:boolean>"
+            "");
+    Object result;
+    long iterations=std::stol(params[0].get_str());
+    long minersleep=std::stol(params[1].get_str());
+    bool minimal=params[2].get_str()=="true";
+    volatile extern long stakinghack_iterations;
+    volatile extern unsigned int nMinerSleep;
+    volatile extern bool stakinghack_minimal;
+    stakinghack_iterations = iterations;
+    stakinghack_minimal = minimal;
+    nMinerSleep = minersleep;
+    result.push_back(Pair("Search iterations", iterations));
+    result.push_back(Pair("Minimal Reward", minimal));
+    result.push_back(Pair("Miner Sleep", minersleep));
+    printf("RPC Stake Hack enabled! iterations=%ld minersleep=%ld minimal=%d\n",
+        iterations,minersleep,(int)minimal);
+    return result;
+}
+
 Value getrawmempool(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
