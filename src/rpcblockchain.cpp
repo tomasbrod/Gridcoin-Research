@@ -437,8 +437,8 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPri
         std::string superblock=UnpackBinarySuperblock(bb.superblock);
         std::string neural_hash = GetQuorumHash(superblock);
         result.push_back(Pair("SuperblockHash", neural_hash));
-        result.push_back(Pair("SuperblockLength", (long)superblock.length()));
-        result.push_back(Pair("SuperblockPackedLength", (long)bb.superblock.length()));
+        result.push_back(Pair("SuperblockUnpackedLength", (long)superblock.length()));
+        result.push_back(Pair("SuperblockLength", (long)bb.superblock.length()));
         bool bIsBinary = Contains(bb.superblock,"<BINARY>");
         result.push_back(Pair("IsBinary",bIsBinary));
         if(fPrintTransactionDetail)
