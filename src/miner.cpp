@@ -784,7 +784,6 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
 
 void StakeMiner(CWallet *pwallet)
 {
-    SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
     // Make this thread recognisable as the mining thread
     RenameThread("grc-stake-miner");
@@ -903,14 +902,12 @@ Inception:
         if (pblock->SignBlock(*pwallet, nFees))
         {
 
-            SetThreadPriority(THREAD_PRIORITY_NORMAL);
             bool Staked = CheckStake(pblock.get(), *pwallet);
 
             if (Staked)
             {
                 msMiningErrors = "Stake block accepted!";
                 printf("Stake block accepted!\r\n");
-                SetThreadPriority(THREAD_PRIORITY_LOWEST);
                 mdPORNonce=0;
             }
             else
@@ -919,7 +916,6 @@ Inception:
                 printf("Stake block rejected \r\n");
                 MilliSleep(1000);
             }
-            SetThreadPriority(THREAD_PRIORITY_LOWEST);
             MilliSleep(500);
             goto Inception;
         }
