@@ -403,7 +403,7 @@ int64_t nGenesisSupply = 340569880;
 
 // Stats for Main Screen:
 std::string    msLastPaymentTime = "";
-globalStatusType GlobalStatusStruct = {"","","","","","","","","","",""};
+globalStatusType GlobalStatusStruct = {"","","","","","","","","","","","",""};
 
 bool fColdBoot = true;
 bool fEnforceCanonical = true;
@@ -612,10 +612,12 @@ void GetGlobalStatus()
 
         GlobalStatusStruct.blocks = RoundToString((double)nBestHeight,0);
         GlobalStatusStruct.difficulty = RoundToString(PORDiff,3);
-        GlobalStatusStruct.netWeight = RoundToString(GetPoSKernelPS2(),2);
+        GlobalStatusStruct.netWeight = RoundToString(GetPoSKernelPS2(),0);
         GlobalStatusStruct.dporWeight = sWeight;
         GlobalStatusStruct.magnitude = RoundToString(boincmagnitude,2);
         GlobalStatusStruct.project = msMiningProject;
+        GlobalStatusStruct.dporSubsidy = RoundToString(GlobalCPUMiningCPID.ResearchSubsidy,3);
+        GlobalStatusStruct.dporMagUnit = RoundToString(GlobalCPUMiningCPID.ResearchMagnitudeUnit,4);
         GlobalStatusStruct.cpid = sOverviewCPID;
         GlobalStatusStruct.status = msMiningErrors;
         GlobalStatusStruct.poll = msPoll;
