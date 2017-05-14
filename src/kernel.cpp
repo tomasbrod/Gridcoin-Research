@@ -614,26 +614,6 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
     double coin_age = std::abs((double)nTimeTx-(double)txPrev.nTime);
     double BitsAge = PORDiff * 144;     //For every 100 Diff in Bits, two hours of coin age for researchers
     if (BitsAge > 86400) BitsAge=86400; //Limit to 24 hours (possibility of astronomical diff)
-    // Halford : Explain to the Researcher why they are not staking:
-    if (checking_local && LessVerbose(100))
-    {
-        std::string narr = "";
-        if (boincblock.cpid != "INVESTOR")
-        {
-            if (boincblock.Magnitude < .25)   narr += "Magnitude too low for POR reward.";
-            //if (payment_age < 60*60)          narr += "Recent: " + RoundToString(payment_age,0);
-            if (payment_age < BitsAge)        narr += " Payment < Diff: " + RoundToString(payment_age,0) + "; " + RoundToString(BitsAge,0);
-            if (coin_age < 4*60*60)           narr += " Coin Age (immature): " + RoundToString(coin_age,0);
-            if (coin_age < RSA_WEIGHT)        narr += " Coin Age < RSA_Weight: " + RoundToString(coin_age,0) + " " + RoundToString(RSA_WEIGHT,0);
-            if (RSA_WEIGHT/14 < MintLimiter(PORDiff,RSA_WEIGHT,boincblock.cpid,nTimeTx) && narr.empty())
-            {
-                narr += " RSAWeight<MintLimiter: "+ RoundToString(RSA_WEIGHT/14,0) + "; " + RoundToString(MintLimiter(PORDiff,RSA_WEIGHT,boincblock.cpid,nTimeTx),0);
-            }
-        }
-        if (RSA_WEIGHT >= 24999 && boincblock.Magnitude > .25)        msMiningErrors7="Newbie block being generated.";
-        msMiningErrors5 = narr;
-    }
-
 
     if (fDebug && !checking_local)
     {
@@ -641,15 +621,23 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
                     (double)payment_age,(double)BitsAge,(double)boincblock.Magnitude,(double)coin_age,(double)RSA_WEIGHT);
     }
 
-    if (boincblock.cpid != "INVESTOR")
-    {
-        if ((payment_age > 60*60) && (payment_age > BitsAge) && boincblock.Magnitude > 1 && (coin_age > 4*60*60) && (coin_age > RSA_WEIGHT))
-        {
-            //Coins are older than RSA balance - Allow hash to dictate outcome
-        }
-        else
-        {
-            return false;
+    if (boincblock.cpid != "INVESTOR") {
+        if (checking_local && RSA_WEIGHT >= 24999 && boincblock.Magnitude > .25)
+            msMiningErrors7="Newbie block being generated.";
+        // Halford : Explain to the Researcher why they are not staking:
+        std::string narr = "";
+        if (payment_age <= 60*60)
+            narr="Payment age too recent: " + RoundToString(payment_age,3);
+        if (payment_age <= BitsAge)
+            narr="Payment age < BitsAge: " + RoundToString(payment_age,3) + "; " + RoundToString(BitsAge,3);
+        if (boincblock.Magnitude <= 1)
+            narr="Magnitude too low for POR reward: " + RoundToString(payment_age,3);
+        if (coin_age <= RSA_WEIGHT)
+            narr=" Coin Age < RSA_Weight: " + RoundToString(coin_age,0) + " " + RoundToString(RSA_WEIGHT,0);
+        if(!narr.empty()) {
+            if (checking_local && LessVerbose(100))
+                msMiningErrors5 = narr;
+            return error("%s",("CheckStakeKernelHashV3: "+narr).c_str());
         }
     }
 
@@ -683,6 +671,15 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
                 printf("{CheckStakeKernelHashV3::INFO:::: RSA_WEIGHT %f, TimeBlockFrom %f, PrevnTime %f, PrevOutHash %s, PrevOut %f, nTimeTx %f, Por_Nonce %f \r\n",
                     (double)RSA_WEIGHT,(double)nTimeBlockFrom, (double)txPrev.nTime, prevout.hash.GetHex().c_str(), (double)prevout.n, (double)nTimeTx, (double)por_nonce);
     }
+
+    if(fPrintProofOfStake) printf(
+"CheckStakeKernelHashV3: RSA %g, Time/16 %.f, Por_Nonce %.f Bits %u Weight %.f\n"
+" Stk %72s\n"
+" Trg %72s\n",
+        (double)RSA_WEIGHT, (double)nTimeTx/(double)16, por_nonce,
+        nBits, (double)nValueIn/125000.0,
+        CBigNum(hashProofOfStake).GetHex().c_str(), bnTarget.GetHex().c_str()
+    );
 
     if (CBigNum(hashProofOfStake) > bnTarget)
     {

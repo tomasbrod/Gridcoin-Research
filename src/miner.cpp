@@ -19,7 +19,7 @@ using namespace std;
 // BitcoinMiner
 //
 
-unsigned int nMinerSleep;
+volatile unsigned int nMinerSleep;
 MiningCPID GetNextProject(bool bForce);
 void ThreadCleanWalletPassphrase(void* parg);
 double GetBlockDifficulty(unsigned int nBits);
@@ -662,8 +662,8 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
     }
     if (pblock->nNonce < 10)
     {
-        if (fDebug10) printf("CheckStake::Nonce too low\r\n");
         nLastBlockSubmitted = 0;
+        return error("CheckStake: Nonce too low\r\n");
         return false;
     }
 
@@ -719,21 +719,20 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
     
     double total_subsidy = boincblock.ResearchSubsidy + boincblock.InterestSubsidy;
     
-    if (fDebug10) printf("CheckStake[]: TotalSubsidy %f, cpid %s, Res %f, Interest %f, hb: %s \r\n",
+    if (fDebug10) printf("CheckStake: TotalSubsidy %f, cpid %s, Res %f, Interest %f, hb: %s \r\n",
                     (double)total_subsidy, boincblock.cpid.c_str(), boincblock.ResearchSubsidy,boincblock.InterestSubsidy,pblock->vtx[0].hashBoinc.c_str());
             
     if (total_subsidy < MintLimiter(PORDiff,boincblock.RSAWeight,boincblock.cpid,pblock->GetBlockTime() ))
     {
             //Prevent Hackers from spamming the network with small blocks
-            if (fDebug10) printf("****CheckStake[]: Total Mint too Small %s, Res %f, Interest %f, hash %s \r\n",boincblock.cpid.c_str(),boincblock.ResearchSubsidy,boincblock.InterestSubsidy,pblock->vtx[0].hashBoinc.c_str());
-            return false;
+            return error("CheckStake: Total Mint too Small %s, Res %f, Interest %f, hash %s \r\n",boincblock.cpid.c_str(),boincblock.ResearchSubsidy,boincblock.InterestSubsidy,pblock->vtx[0].hashBoinc.c_str());
             //  return error("*****CheckStake[] : Total Mint too Small, %f",(double)boincblock.ResearchSubsidy+boincblock.InterestSubsidy);
     }
             
     if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], pblock->vtx[1], pblock->nBits, proofHash, hashTarget, pblock->vtx[0].hashBoinc, true, pblock->nNonce))
     {   
         if (fDebug3) printf("Hash boinc %s",pblock->vtx[0].hashBoinc.c_str());
-        return error("CheckStake() : proof-of-stake checking failed");
+        return error("CheckStake: proof-of-stake checking failed");
     }
         
 
@@ -753,7 +752,7 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
         if (pblock->hashPrevBlock != hashBestChain)
         {
             msMiningErrors6="CheckStake[]: Generated block is stale.";
-            return error("CheckStake[] : generated block is stale");
+            return error("CheckStake: generated block is stale");
         }
 
         
@@ -765,14 +764,16 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
 
         // Process this block the same as if we had received it from another node
         //Halford - Ensure Blocks have a minimum time spacing (allow newbies to participate easily)
-        if (!IsLockTimeWithinMinutes(nLastBlockSubmitted,5)) 
+        if (IsLockTimeWithinMinutes(nLastBlockSubmitted,5)) 
         {
-            nLastBlockSubmitted = GetAdjustedTime();
-            if (!ProcessBlock(NULL, pblock, true))
-            {
-                msMiningErrors6="Block vehemently rejected.";
-                return error("CheckStake[] : ProcessBlock (by me), but block not accepted");
-            }
+            msMiningErrors6="Stake newbie protection";
+            return error("CheckStake: Stake newbie protection");
+        }
+        nLastBlockSubmitted = GetAdjustedTime();
+        if (!ProcessBlock(NULL, pblock, true))
+        {
+            msMiningErrors6="Block vehemently rejected.";
+            return error("CheckStake: ProcessBlock (by me), but block not accepted");
         }
     }
     nLastBlockSolved = GetAdjustedTime();
@@ -830,36 +831,25 @@ void StakeMiner(CWallet *pwallet)
     while (true)
     {
 Inception:
+
         if (fShutdown)
         {
             printf("ResearchMiner:ShuttingDown..");
             return;
         }
-
         
         while (pwallet->IsLocked())
         {
             nLastCoinStakeSearchInterval = 0;
-            MilliSleep(1000);
-            if (fShutdown)
-            {
-                printf("ResearchMiner:Exiting(WalletLocked)");
-                return;
-            }
+            goto SkipStake;
         }
 
-        int iFutile=0;
+        //the SerializeBoincBlock is called so many times, it is insane
+
         while (!bNetAveragesLoaded)
         {
             if (LessVerbose(100) && msPrimaryCPID != "INVESTOR") printf("ResearchMiner:Net averages not yet loaded...");
-                        
-            iFutile++;
-            if (iFutile > 50)
-            {
-                iFutile = 0;
-                goto Inception;             
-            }
-            MilliSleep(250);
+            goto SkipStake;
         }
 
                     
@@ -882,34 +872,32 @@ Inception:
             if (vNodes.size() < 3 || nBestHeight < GetNumBlocksOfPeers())
             {
                 MilliSleep(1);
-                continue;
+                goto SkipStake;
             }
         }
-Begin:
-        
-    
+
+        {
         //
         // Create new block
         //
         int64_t nFees;
-        
         std::unique_ptr<CBlock> pblock(CreateNewBlock(pwallet, true, &nFees));
         if (!pblock.get())
         {
             //This can happen after reharvesting CPIDs... Because CreateNewBlock() requires a valid CPID..  Start Over.
             if (fDebug10) printf(".StakeMiner Starting.");
             MilliSleep(1);
-            goto Begin;
+            goto SkipStake;
         }
         
 
         //Verify we are still on the main chain
     
-        if (IsLockTimeWithinMinutes(nLastBlockSolved,5)) 
+        if (false && IsLockTimeWithinMinutes(nLastBlockSolved,4))
         {
                 if (fDebug10) printf("=");
                 MilliSleep(1);
-                goto Begin;
+                goto SkipStake;
         }
 
         // Trying to sign a block
@@ -930,14 +918,16 @@ Begin:
             else
             {
                 msMiningErrors = "Stake block rejected";
-                if (fDebug) printf("Stake block rejected \r\n");
+                printf("Stake block rejected \r\n");
                 MilliSleep(1000);
             }
             SetThreadPriority(THREAD_PRIORITY_LOWEST);
             MilliSleep(500);
+            goto Inception;
         }
-        else
-            MilliSleep(nMinerSleep);
+        }
+        SkipStake:
+        MilliSleep(nMinerSleep);
     }
 }
 
