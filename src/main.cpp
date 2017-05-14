@@ -851,7 +851,7 @@ MiningCPID GetNextProject(bool bForce)
 
 
                                         GlobalCPUMiningCPID.boincruntimepublickey = structcpid.cpidhash;
-                                        printf("\r\n GNP: Setting bpk to %s\r\n",structcpid.cpidhash.c_str());
+                                        if(fDebug) printf("\r\n GNP: Setting bpk to %s\r\n",structcpid.cpidhash.c_str());
 
                                         uint256 pbh = 1;
                                         GlobalCPUMiningCPID.cpidv2 = ComputeCPIDv2(GlobalCPUMiningCPID.email,GlobalCPUMiningCPID.boincruntimepublickey, pbh);
@@ -7744,7 +7744,7 @@ std::string SerializeBoincBlock(MiningCPID mcpid)
         if (!mcpid.BoincPublicKey.empty())
         {
             mcpid.BoincSignature = SignBlockWithCPID(mcpid.cpid,mcpid.lastblockhash);
-            if(fDebug) printf("Signing Block for cpid %s and blockhash %s with sig %s\r\n",mcpid.cpid.c_str(),mcpid.lastblockhash.c_str(),mcpid.BoincSignature.c_str());
+            if(fDebug3) printf("Signing Block for cpid %s and blockhash %s with sig %s\r\n",mcpid.cpid.c_str(),mcpid.lastblockhash.c_str(),mcpid.BoincSignature.c_str());
         }
     }
 

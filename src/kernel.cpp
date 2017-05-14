@@ -665,7 +665,7 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
 
     // Now check if proof-of-stake hash meets target protocol
 
-    if (fDebug && !checking_local)
+    if (fDebug10 && !checking_local)
     {
                 //Detailed Logging for Linux - Windows difference in calculation result
                 printf("{CheckStakeKernelHashV3::INFO:::: RSA_WEIGHT %f, TimeBlockFrom %f, PrevnTime %f, PrevOutHash %s, PrevOut %f, nTimeTx %f, Por_Nonce %f \r\n",
@@ -673,9 +673,9 @@ static bool CheckStakeKernelHashV3(CBlockIndex* pindexPrev, unsigned int nBits, 
     }
 
     if(fPrintProofOfStake) printf(
-"CheckStakeKernelHashV3: RSA %g, Time/16 %.f, Por_Nonce %.f Bits %u Weight %.f\n"
+"CheckStakeKernelHashV3: %sRSA %g, Time/16 %.f, Por_Nonce %.f Bits %u Weight %.f\n"
 " Stk %72s\n"
-" Trg %72s\n",
+" Trg %72s\n", checking_local?"Local ":" ",
         (double)RSA_WEIGHT, (double)nTimeTx/(double)16, por_nonce,
         nBits, (double)nValueIn/125000.0,
         CBigNum(hashProofOfStake).GetHex().c_str(), bnTarget.GetHex().c_str()

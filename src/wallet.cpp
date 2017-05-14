@@ -2101,7 +2101,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     {
         msMiningErrors7="Probing coin stake";
         msMiningErrors = msMiningErrors7;
-        if (fDebug) printf("CreateCoinStake: nCredit = 0");
+        if (fDebug) printf("CreateCoinStake: nCredit = 0\n");
         return false;
     }
 
@@ -2109,7 +2109,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     {
         msMiningErrors7="Stake violates reserve balance. "+RoundToString(nCredit,1);
         msMiningErrors = msMiningErrors7;
-        return error("CreateCoinStake: %s\n",msMiningErrors7);
+        return error("CreateCoinStake: %s\n",msMiningErrors7.c_str());
     }
 
     if (fDebug) printf("K+");
