@@ -5363,6 +5363,7 @@ bool IsCPIDValidv2(MiningCPID& mc, int height)
     else if (height >= cpidV3CutOverHeight)
     {
         if (mc.cpid == "INVESTOR" || mc.cpid=="investor") return true;
+        if (mc.cpid.empty()) return false;
         // V3 requires a beacon, a beacon public key and a valid block signature signed by the CPID's private key
         result = VerifyCPIDSignature(mc.cpid,mc.lastblockhash,mc.BoincSignature);
     }
@@ -5809,7 +5810,7 @@ bool TallyResearchAverages(bool Forcefully)
      int64_t nStart = GetTimeMillis();
 
 
-    if (fDebug3) printf("Tallying Research Averages (begin) ");
+    if (fDebug) printf("Tallying Research Averages (begin) ");
     nLastTallied = GetAdjustedTime();
     bNetAveragesLoaded = false;
     bool superblockloaded = false;
@@ -5866,7 +5867,7 @@ bool TallyResearchAverages(bool Forcefully)
                                         {
                                                 LoadSuperblock(superblock,pblockindex->nTime,pblockindex->nHeight);
                                                 superblockloaded=true;
-                                                if (fDebug3) printf(" Superblock Loaded %f \r\n",(double)pblockindex->nHeight);
+                                                if (fDebug) printf(" Superblock Loaded %f \r\n",(double)pblockindex->nHeight);
                                         }
                                 }
                             }
