@@ -1350,7 +1350,7 @@ void StakeMiner(CWallet *pwallet)
     CTransaction &StakeTX= StakeBlock.vtx[1]; //tx 1 is coin_stake
 
     //New version
-    if(fTestNet && pindexPrev->nHeight > 271700)
+    if(fTestNet && pindexPrev->nHeight > 288100)
         StakeBlock.nVersion = 8;
 
     // * Try to create a CoinStake transaction
