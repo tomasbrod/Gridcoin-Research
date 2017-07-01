@@ -829,10 +829,10 @@ CBigNum CalculateStakeHashV8(
 {
     CDataStream ss(SER_GETHASH, 0);
     ss << StakeModifier;
-    ss << (CoinBlock.nTime & STAKE_TIMESTAMP_MASK);
+    ss << (CoinBlock.nTime & ~STAKE_TIMESTAMP_MASK);
     ss << CoinTx.GetHash();
     ss << CoinTxN;
-    ss << (nTimeTx & STAKE_TIMESTAMP_MASK);
+    ss << (nTimeTx & ~STAKE_TIMESTAMP_MASK);
     CBigNum hashProofOfStake( Hash(ss.begin(), ss.end()) );
     return hashProofOfStake;
 }
