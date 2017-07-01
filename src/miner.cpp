@@ -1256,9 +1256,18 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
         +RoundToString(out_interest,2)+" "
         +RoundToString(OUT_POR,2)+"); ";
 
+    return true;
+}
+
+void StakeSplitOutputs(CBlock &blocknew)
+{
+    std::vector<CTxOut> &txout = blocknew.vtx[1].vout;
+    assert(txout.size()==2);
+    int64_t nReward = txout[1].nValue;
+
     // split the stake output if over 100
-    nReward = txout[1].nValue;
-    if( nReward > 100*COIN )
+
+    if (nReward > 200*COIN)
     {
         txout.push_back(CTxOut(
             nReward / 2,
@@ -1267,7 +1276,7 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
         txout[1].nValue = nReward - txout[2].nValue;
     }
 
-    return true;
+    return;
 }
 
 bool IsMiningAllowed(CWallet *pwallet)
@@ -1369,6 +1378,9 @@ void StakeMiner(CWallet *pwallet)
     if( !CreateGridcoinReward(StakeBlock,StakeCoinAge,pindexPrev) )
         continue;
     printf("StakeMiner: added gridcoin reward to coinstake\n");
+
+    // * split the output of stake and add additional inputs
+    StakeSplitOutputs(StakeBlock);
 
     // * sign boinchash, coinstake, wholeblock
     if( !SignStakeBlock(StakeBlock,BlockKey,StakeInputs,pwallet) )
