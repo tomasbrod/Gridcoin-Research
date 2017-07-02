@@ -1303,7 +1303,8 @@ bool IsMiningAllowed(CWallet *pwallet)
         nLastCoinStakeSearchInterval = 0;
         return false;
     }
-    
+
+    /*
     //Verify we are still on the main chain
     if (IsLockTimeWithinMinutes(nLastBlockSolved,3))
     {
@@ -1318,6 +1319,7 @@ bool IsMiningAllowed(CWallet *pwallet)
         if(fDebug) printf("Wallet out of sync - unable to stake.\n");
         return false;
     }
+    */
 
 
     return true;
