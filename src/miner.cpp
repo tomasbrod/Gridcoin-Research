@@ -1182,10 +1182,6 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
     //Replay attack on research reward, kikipope
     MiningCPID miningcpid = GlobalCPUMiningCPID;
     
-    miningcpid.cpid   = "7d0d73fe026d66fd4ab8d5d8da32a611";
-    miningcpid.cpidv2 = "7d0d73fe026d66fd4ab8d5d8da32a6119595409894c76c686f6638c43aca95c66cc8c667346b6c37383b963b3b36336862656e6a6f416873647170706d2f64706e";
-    miningcpid.lastblockhash = "5afe8a0d28fbbec50c71adb9ee137eec894576b4ebab7376545359a7c20fd09b";
-    miningcpid.BoincSignature = "MEQCIE8XGUiyYoR1Aj4ToInhE5hSYFolB+9t/5iGhqJF8AijAiA0XgygN1iCze/Q5I5jyw+nSCBsbtT64uj2EMipQr1lsQ==";
 
     int64_t nReward = GetProofOfStakeReward(
         nCoinAge, nFees, miningcpid.cpid, false, 0,
@@ -1202,15 +1198,11 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
         pbh );
 
 
-    miningcpid.Magnitude = CalculatedMagnitude2(
-        GlobalCPUMiningCPID.cpid, blocknew.nTime,
-        false );
     */
 
     //miningcpid.Magnitude=30000;
 
     //miningcpid.lastblockhash = pbh.GetHex();
-    miningcpid.RSAWeight = GetRSAWeightByCPID(miningcpid.cpid);
     miningcpid.ResearchSubsidy = OUT_POR;
     miningcpid.ResearchSubsidy2 = OUT_POR;
     miningcpid.ResearchAge = dAccrualAge;
@@ -1316,9 +1308,6 @@ void StakeMiner(CWallet *pwallet)
     if(!IsMiningAllowed(pwallet))
         continue;
 
-    GetNextProject(false);
-    //GlobalCPUMiningCPID.Magnitude=30000;
-
     // * Create a bare block
     CBlockIndex* pindexPrev = pindexBest;
     CBlock StakeBlock;
@@ -1328,6 +1317,17 @@ void StakeMiner(CWallet *pwallet)
     StakeBlock.vtx.resize(2);
     //tx 0 is coin_base
     CTransaction &StakeTX= StakeBlock.vtx[1]; //tx 1 is coin_stake
+
+    GetNextProject(false);
+    GlobalCPUMiningCPID.cpid   = "7d0d73fe026d66fd4ab8d5d8da32a611";
+    GlobalCPUMiningCPID.cpidv2 = "7d0d73fe026d66fd4ab8d5d8da32a6119595409894c76c686f6638c43aca95c66cc8c667346b6c37383b963b3b36336862656e6a6f416873647170706d2f64706e";
+    GlobalCPUMiningCPID.lastblockhash = "5afe8a0d28fbbec50c71adb9ee137eec894576b4ebab7376545359a7c20fd09b";
+    GlobalCPUMiningCPID.BoincSignature = "MEQCIE8XGUiyYoR1Aj4ToInhE5hSYFolB+9t/5iGhqJF8AijAiA0XgygN1iCze/Q5I5jyw+nSCBsbtT64uj2EMipQr1lsQ==";
+    GlobalCPUMiningCPID.Magnitude = CalculatedMagnitude2(
+        GlobalCPUMiningCPID.cpid, StakeBlock.nTime,
+        false );
+    GlobalCPUMiningCPID.RSAWeight = GetRSAWeightByCPID(GlobalCPUMiningCPID.cpid);
+    //GlobalCPUMiningCPID.Magnitude=30000;
 
     // * Try to create a CoinStake transaction
     CKey BlockKey;
