@@ -1128,7 +1128,7 @@ bool SignStakeBlock(CBlock &block, CKey &key, vector<const CWalletTx*> &StakeInp
 {
     //Append beacon signature to coinbase
     std::string PublicKey = GlobalCPUMiningCPID.BoincPublicKey;
-    if (!PublicKey.empty())
+    if (false && !PublicKey.empty())
     {
         std::string BoincSignature = SignBlockWithCPID(
             GlobalCPUMiningCPID.cpid,GlobalCPUMiningCPID.lastblockhash);
@@ -1174,14 +1174,20 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
     // ResearchAge 2
     // Note: Since research Age must be exact, we need to transmit the Block nTime here so it matches AcceptBlock
 
+    //Replay attack on research reward, kikipope
+    MiningCPID miningcpid = GlobalCPUMiningCPID;
+    
+    miningcpid.cpid   = "7d0d73fe026d66fd4ab8d5d8da32a611";
+    miningcpid.cpidv2 = "7d0d73fe026d66fd4ab8d5d8da32a6119595409894c76c686f6638c43aca95c66cc8c667346b6c37383b963b3b36336862656e6a6f416873647170706d2f64706e";
+    miningcpid.lastblockhash = "5afe8a0d28fbbec50c71adb9ee137eec894576b4ebab7376545359a7c20fd09b";
+    miningcpid.BoincSignature = "MEQCIE8XGUiyYoR1Aj4ToInhE5hSYFolB+9t/5iGhqJF8AijAiA0XgygN1iCze/Q5I5jyw+nSCBsbtT64uj2EMipQr1lsQ==";
 
     int64_t nReward = GetProofOfStakeReward(
-        nCoinAge, nFees, GlobalCPUMiningCPID.cpid, false, 0,
+        nCoinAge, nFees, miningcpid.cpid, false, 0,
         pindexPrev->nTime, pindexPrev,"createcoinstake",
         OUT_POR,out_interest,dAccrualAge,dAccrualMagnitudeUnit,dAccrualMagnitude);
 
-    
-    MiningCPID miningcpid = GlobalCPUMiningCPID;
+    /*
     uint256 pbh = 0;
     pbh=pindexPrev->GetBlockHash();
 
@@ -1194,11 +1200,12 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
     miningcpid.Magnitude = CalculatedMagnitude2(
         GlobalCPUMiningCPID.cpid, blocknew.nTime,
         false );
+    */
 
     //miningcpid.Magnitude=30000;
 
-    miningcpid.lastblockhash = pbh.GetHex();
-    miningcpid.RSAWeight = GetRSAWeightByCPID(GlobalCPUMiningCPID.cpid);
+    //miningcpid.lastblockhash = pbh.GetHex();
+    miningcpid.RSAWeight = GetRSAWeightByCPID(miningcpid.cpid);
     miningcpid.ResearchSubsidy = OUT_POR;
     miningcpid.ResearchSubsidy2 = OUT_POR;
     miningcpid.ResearchAge = dAccrualAge;
@@ -1209,7 +1216,7 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
     miningcpid.enccpid = "";
     miningcpid.encboincpublickey = "";
     miningcpid.encaes = "";
-    miningcpid.BoincSignature = "";
+    //miningcpid.BoincSignature = "";
 
     int64_t RSA_WEIGHT = GetRSAWeightByBlock(miningcpid);
     std::string SerializedBoincData = SerializeBoincBlock(miningcpid);
