@@ -240,5 +240,6 @@ extern json_spirit::Value dao(const json_spirit::Array& params, bool fHelp);
 
 // Brod
 extern json_spirit::Value rpc_getblockstats(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value setstakehack(const json_spirit::Array& params, bool fHelp);
 
 #endif

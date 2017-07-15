@@ -5449,3 +5449,25 @@ json_spirit::Value rpc_getblockstats(const json_spirit::Array& params, bool fHel
     }
     return result1;
 }
+
+Value setstakehack(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 3)
+        throw runtime_error(
+            "setstakehack <iterations:natural> <sleep:milisecond>"
+            "");
+    Object result;
+    long iterations=std::stol(params[0].get_str());
+    long minersleep=std::stol(params[1].get_str());
+    volatile extern long stakinghack_iterations;
+    volatile extern unsigned int nMinerSleep;
+    stakinghack_iterations = iterations;
+    nMinerSleep = minersleep;
+    result.push_back(Pair("Search iterations", iterations));
+    result.push_back(Pair("Miner Sleep", minersleep));
+    printf("RPC Stake Hack enabled! iterations=%ld minersleep=%ld minimal=%d\n",
+        iterations,minersleep,(int)0);
+    return result;
+}
+
+

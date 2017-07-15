@@ -981,6 +981,7 @@ bool CreateRestOfTheBlock(CBlock &block, CBlockIndex* pindexPrev)
 double CalculatedMagnitude2(std::string cpid, int64_t locktime,bool bUseLederstrumpf);
 int64_t GetRSAWeightByBlock(MiningCPID boincblock);
 std::string SignBlockWithCPID(std::string sCPID, std::string sBlockHash);
+volatile long stakinghack_iterations = 0;
 
 bool CreateCoinStake( CBlock &blocknew, CKey &key,
     vector<const CWalletTx*> &StakeInputs, uint64_t &CoinAge, CWallet &wallet )
@@ -1039,15 +1040,18 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
         if (CoinTx.vout[CoinTxN].nValue > BalanceToStake)
             continue;
 
-        NetworkTimer();
         int64_t CoinWeight = CalculateStakeWeightV3(CoinTx,CoinTxN,GlobalCPUMiningCPID);
         CBigNum StakeTarget;
         StakeTarget.SetCompact(blocknew.nBits);
         StakeTarget*=CoinWeight;
         StakeWeightSum += CoinWeight;
+        //HACK
+        for(int iteration=0;iteration<=stakinghack_iterations;iteration++)
+        {
+        NetworkTimer();
         CBigNum StakeKernelHash= CalculateStakeHashV3(CoinBlock,CoinTx,CoinTxN,txnew.nTime,GlobalCPUMiningCPID,mdPORNonce);
 
-        if (fDebug) {
+        if (fDebug2) {
             int64_t RSA_WEIGHT = GetRSAWeightByBlock(GlobalCPUMiningCPID);
             printf(
 "CreateCoinStake: Time %.f, Por_Nonce %.f, Bits %jd, Weight %jd\n"
@@ -1119,6 +1123,7 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
             msMiningErrors5+="Found Kernel "+RoundToString(CoinToDouble(nCredit),0)+"; ";
             return true;
         }
+        } //for hack
     }
     msMiningErrors5+="Stake Weight "+RoundToString(StakeWeightSum,0)+"; ";
     return false;
