@@ -28,7 +28,7 @@ namespace
          }
          
          // Setup global variables.
-         pindexBest = &blocks.back();
+         Best.top = &blocks.back();
          pindexGenesisBlock = &blocks.front();         
          nBestHeight = blocks.back().nHeight;
       }

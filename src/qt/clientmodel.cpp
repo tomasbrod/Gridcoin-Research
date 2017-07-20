@@ -42,7 +42,7 @@ int ClientModel::getNumConnections() const
 int ClientModel::getNumBlocks() const
 {
     LOCK(cs_main);
-    return nBestHeight;
+    return Best.GetHeight();
 }
 
 int ClientModel::getNumBlocksAtStartup()
@@ -65,8 +65,8 @@ quint64 ClientModel::getTotalBytesSent() const
 QDateTime ClientModel::getLastBlockDate() const
 {
     LOCK(cs_main);
-    if (pindexBest)
-        return QDateTime::fromTime_t(pindexBest->GetBlockTime());
+    if (Best.top)
+        return QDateTime::fromTime_t(Best.top->GetBlockTime());
     else
         return QDateTime::fromTime_t(1393221600); // Genesis block's time
 }
@@ -182,7 +182,7 @@ QString ClientModel::formatBoostVersion()  const
 QString ClientModel::getDifficulty() const
 {
 	//12-2-2014;R Halford; Display POR Diff on RPC Console
-	double PORDiff = GetDifficulty(GetLastBlockIndex(pindexBest, true));
+	double PORDiff = GetDifficulty(GetLastBlockIndex(Best.top, true));
 	
 	std::string diff = RoundToString(PORDiff,4);
 	return QString::fromStdString(diff);

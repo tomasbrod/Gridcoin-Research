@@ -24,7 +24,6 @@
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
-extern int nBestHeight;
 
 
 /** Time between pings automatically sent out for latency probing and keepalive (in seconds). */

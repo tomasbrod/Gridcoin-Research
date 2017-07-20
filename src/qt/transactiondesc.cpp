@@ -30,10 +30,10 @@ QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {
     AssertLockHeld(cs_main);
 
-    if (!IsFinalTx(wtx, nBestHeight + 1))
+    if (!IsFinalTx(wtx, Best.GetHeight() + 1))
     {
         if (wtx.nLockTime < LOCKTIME_THRESHOLD)
-            return tr("Open for %n more block(s)", "", wtx.nLockTime - nBestHeight);
+            return tr("Open for %n more block(s)", "", wtx.nLockTime - Best.GetHeight());
         else
             return tr("Open until %1").arg(GUIUtil::dateTimeStr(wtx.nLockTime));
     }
@@ -279,7 +279,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
 
 	// Smart Contracts
 
-    msHashBoinc = "";
+	/*msHashBoinc = "";*/
 
 
     if (fDebug || true)
@@ -316,7 +316,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
 				//Extract contract here from : wtx.hashBoinc - contract key
 				//strHTML += "<br><b>Contracts:</b> " + QString::fromStdString(sContractLength) + "<p><br>";
 		}
-		msHashBoinc += wtx.hashBoinc;
+		/*msHashBoinc += wtx.hashBoinc;*/
         strHTML += "<br><b>" + tr("Inputs") + ":</b>";
         strHTML += "<ul>";
 

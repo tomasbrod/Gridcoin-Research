@@ -112,6 +112,7 @@ void DetectShutdownThread(boost::thread_group* threadGroup)
 
 void InitializeBoincProjects()
 {
+#if 0
        //Initialize GlobalCPUMiningCPID
         GlobalCPUMiningCPID.initialized = true;
         GlobalCPUMiningCPID.cpid="";
@@ -143,7 +144,7 @@ void InitializeBoincProjects()
                                 printf("Proj %s ",project_name.c_str());
                                 std::string project_value = key_value;
                                 boost::to_lower(project_name);
-                                std::string mainProject = ToOfficialName(project_name);
+                                std::string mainProject = ToOfficialNameNew(project_name);
                                 boost::to_lower(mainProject);
                                 StructCPID structcpid = GetStructCPID();
                                 mvBoincProjects.insert(map<string,StructCPID>::value_type(mainProject,structcpid));
@@ -152,13 +153,13 @@ void InitializeBoincProjects()
                                 structcpid.link = "http://";
                                 structcpid.projectname = mainProject;
                                 mvBoincProjects[mainProject] = structcpid;
-                                WHITELISTED_PROJECTS++;
+                                Best.super.ProjectCount++;
 
                             }
                      }
                 }
        }
-
+#endif
 }
 
 
@@ -1013,7 +1014,7 @@ bool AppInit2()
 
     RegisterWallet(pwalletMain);
 
-    CBlockIndex *pindexRescan = pindexBest;
+    CBlockIndex *pindexRescan = Best.top;
     if (GetBoolArg("-rescan"))
         pindexRescan = pindexGenesisBlock;
     else
@@ -1023,10 +1024,10 @@ bool AppInit2()
         if (walletdb.ReadBestBlock(locator))
             pindexRescan = locator.GetBlockIndex();
     }
-    if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
+    if (Best.top != pindexRescan && Best.top && pindexRescan && Best.GetHeight() > pindexRescan->nHeight)
     {
         uiInterface.InitMessage(_("Rescanning..."));
-        printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+        printf("Rescanning last %i blocks (from block %i)...\n", Best.GetHeight() - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
         printf(" rescan      %15" PRId64 "ms\n", GetTimeMillis() - nStart);
@@ -1105,7 +1106,7 @@ bool AppInit2()
     if (fDebug)
     {
         printf("mapBlockIndex.size() = %" PRIszu "\n",   mapBlockIndex.size());
-        printf("nBestHeight = %d\n",            nBestHeight);
+        printf("nBestHeight = %d\n",            Best.GetHeight());
         printf("setKeyPool.size() = %" PRIszu "\n",      pwalletMain->setKeyPool.size());
         printf("mapWallet.size() = %" PRIszu "\n",       pwalletMain->mapWallet.size());
         printf("mapAddressBook.size() = %" PRIszu "\n",  pwalletMain->mapAddressBook.size());

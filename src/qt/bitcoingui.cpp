@@ -2034,14 +2034,14 @@ void BitcoinGUI::updateStakingIcon()
     {
 		uint64_t nWeight = this->nWeight;
         uint64_t nNetworkWeight = GetPoSKernelPS();
-        unsigned nEstimateTime = GetTargetSpacing(nBestHeight) * (nNetworkWeight / ((nWeight/COIN)+.001)) * 1;
-		if (fDebug10) printf("StakeIcon Vitals BH %f, NetWeight %f, Weight %f \r\n", (double)GetTargetSpacing(nBestHeight),(double)nNetworkWeight,(double)nWeight);
+        unsigned nEstimateTime = GetTargetSpacing(Best.GetHeight()) * (nNetworkWeight / ((nWeight/COIN)+.001)) * 1;
+		if (fDebug10) printf("StakeIcon Vitals BH %f, NetWeight %f, Weight %f \r\n", (double)GetTargetSpacing(Best.GetHeight()),(double)nNetworkWeight,(double)nWeight);
         QString text = GetEstimatedTime(nEstimateTime);
         //Halford - 1-9-2015 - Calculate time for POR Block:
 		unsigned int nPOREstimate = (unsigned int)GetPOREstimatedTime(GlobalCPUMiningCPID.RSAWeight);
 		QString PORText = "Estimated time to earn POR Reward: " + GetEstimatedTime(nPOREstimate);
 		if (nPOREstimate == 0) PORText="";
-        if (IsProtocolV2(nBestHeight+1))
+        if (IsProtocolV2(Best.GetHeight()+1))
         {
             nWeight /= COIN;
         }

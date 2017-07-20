@@ -27,7 +27,6 @@ std::string getHardDriveSerial();
 int64_t GetRSAWeightByCPIDWithRA(std::string cpid);
 extern double DoubleFromAmount(int64_t amount);
 std::string PubKeyToAddress(const CScript& scriptPubKey);
-CBlockIndex* GetHistoricalMagnitude(std::string cpid);
 std::string UnpackBinarySuperblock(std::string sBlock);
 std::string PackBinarySuperblock(std::string sBlock);
 extern std::string GetProvableVotingWeightXML();
@@ -226,10 +225,10 @@ double GetDifficulty(const CBlockIndex* blockindex)
     // minimum difficulty = 1.0.
     if (blockindex == NULL)
     {
-        if (pindexBest == NULL)
+        if (Best.top == NULL)
             return 1.0;
         else
-            blockindex = GetLastBlockIndex(pindexBest, false);
+            blockindex = GetLastBlockIndex(Best.top, false);
     }
 
     int nShift = (blockindex->nBits >> 24) & 0xff;
@@ -284,7 +283,7 @@ double GetBlockDifficulty(unsigned int nBits)
 
 double GetPoWMHashPS()
 {
-    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+    if (Best.GetHeight() >= LAST_POW_BLOCK)
         return 0;
 
     int nPoWInterval = 72;
@@ -315,7 +314,7 @@ double GetPoSKernelPS()
     double dStakeKernelsTriedAvg = 0;
     int nStakesHandled = 0, nStakesTime = 0;
 
-    CBlockIndex* pindex = pindexBest;;
+    CBlockIndex* pindex = Best.top;
     CBlockIndex* pindexPrevStake = NULL;
 
     while (pindex && nStakesHandled < nPoSInterval)
@@ -376,7 +375,7 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPri
     result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
     result.push_back(Pair("entropybit", (int)blockindex->GetStakeEntropyBit()));
     result.push_back(Pair("modifier", strprintf("%016" PRIx64, blockindex->nStakeModifier)));
-    result.push_back(Pair("modifierchecksum", strprintf("%08x", blockindex->nStakeModifierChecksum)));
+    result.push_back(Pair("modifierchecksum", "");
     Array txinfo;
     BOOST_FOREACH (const CTransaction& tx, block.vtx)
     {
@@ -504,7 +503,7 @@ Value getdifficulty(const Array& params, bool fHelp)
 
     Object obj;
     obj.push_back(Pair("proof-of-work",        GetDifficulty()));
-    obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(Best.top, true))));
     obj.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     return obj;
 }
@@ -2961,7 +2960,7 @@ Value execute(const Array& params, bool fHelp)
         entry.push_back(Pair("beacon_count",out_beacon_count));
         entry.push_back(Pair("beacon_participant_count",out_participant_count));
         entry.push_back(Pair("average_magnitude",out_avg));
-        entry.push_back(Pair("superblock_valid",VerifySuperblock(superblock,pindexBest->nHeight)));
+        entry.push_back(Pair("superblock_valid",VerifySuperblock(superblock,Best.GetHeight())));
         int64_t superblock_age = GetAdjustedTime() - mvApplicationCacheTimestamp["superblock;magnitudes"];
         entry.push_back(Pair("Superblock Age",superblock_age));
         bool bDireNeed = NeedASuperblock();
@@ -2978,8 +2977,8 @@ Value execute(const Array& params, bool fHelp)
         double out_beacon_count = 0;
         double out_participant_count = 0;
         double out_avg = 0;
-        double avg = GetSuperblockAvgMag(contract,out_beacon_count,out_participant_count,out_avg,false,nBestHeight);
-        bool bValid = VerifySuperblock(contract,pindexBest->nHeight);
+        double avg = GetSuperblockAvgMag(contract,out_beacon_count,out_participant_count,out_avg,false,Best.GetHeight());
+        bool bValid = VerifySuperblock(contract,Best.GetHeight());
         entry.push_back(Pair("avg",avg));
         entry.push_back(Pair("beacon_count",out_beacon_count));
         entry.push_back(Pair("avg_mag",out_avg));
@@ -3352,11 +3351,11 @@ Array LifetimeReport(std::string cpid)
        results.push_back(c);
        Object entry;
        CBlockIndex* pindex = pindexGenesisBlock;
-       while (pindex->nHeight < pindexBest->nHeight)
+       while (pindex->nHeight < Best.GetHeight())
        {
             pindex = pindex->pnext;
             if (pindex==NULL || !pindex->IsInMainChain()) continue;
-            if (pindex == pindexBest) break;
+            if (pindex == Best.top) break;
             if (pindex->GetCPID() == cpid && (pindex->nResearchSubsidy > 0))
             {
                 entry.push_back(Pair(RoundToString((double)pindex->nHeight,0), RoundToString(pindex->nResearchSubsidy,2)));
@@ -3387,7 +3386,7 @@ Array SuperblockReport(std::string cpid)
       int nLookback = BLOCKS_PER_DAY * 14;
       int nMinDepth = (nMaxDepth - nLookback) - ( (nMaxDepth-nLookback) % BLOCK_GRANULARITY);
       //int iRow = 0;
-      CBlockIndex* pblockindex = pindexBest;
+      CBlockIndex* pblockindex = Best.top;
       while (pblockindex->nHeight > nMaxDepth)
       {
                 if (!pblockindex || !pblockindex->pprev || pblockindex == pindexGenesisBlock) return results;
@@ -3446,7 +3445,7 @@ Array MagnitudeReport(std::string cpid)
            double total_owed = 0;
            double magnitude_unit = GRCMagnitudeUnit(GetAdjustedTime());
            msRSAOverview = "";
-           if (!pindexBest) return results;
+           if (!Best.top) return results;
             
            try
            {
@@ -3464,7 +3463,7 @@ Array MagnitudeReport(std::string cpid)
                                 if (cpid.empty() || (Contains(structMag.cpid,cpid)))
                                 {
                                             Object entry;
-                                            if (IsResearchAgeEnabled(pindexBest->nHeight))
+                                            if (IsResearchAgeEnabled(Best.GetHeight()))
                                             {
 
                                                 StructCPID stCPID = GetLifetimeCPID(structMag.cpid,"MagnitudeReport");
@@ -3530,7 +3529,7 @@ Array MagnitudeReport(std::string cpid)
 
                     Object entry2;
                     entry2.push_back(Pair("Magnitude Unit (GRC payment per Magnitude per day)", magnitude_unit));
-                    if (!IsResearchAgeEnabled(pindexBest->nHeight) && cpid.empty()) entry2.push_back(Pair("Grand Total Outstanding Owed",total_owed));
+                    if (!IsResearchAgeEnabled(Best.GetHeight()) && cpid.empty()) entry2.push_back(Pair("Grand Total Outstanding Owed",total_owed));
                     results.push_back(entry2);
 
                     int nMaxDepth = (nBestHeight-CONSENSUS_LOOKBACK) - ( (nBestHeight-CONSENSUS_LOOKBACK) % BLOCK_GRANULARITY);
@@ -3599,8 +3598,8 @@ std::string RetrieveBeaconValueWithMaxAge(const std::string& cpid, int64_t iMaxS
 
     // Compare the age of the beacon to the age of the current block. If we have
     // no current block we assume that the beacon is valid.
-    int64_t iAge = pindexBest != NULL
-          ? pindexBest->nTime - mvApplicationCacheTimestamp[key]
+    int64_t iAge = Best.top != NULL
+          ? Best.top->nTime - mvApplicationCacheTimestamp[key]
           : 0;
 
     return (iAge > iMaxSeconds)
@@ -3648,14 +3647,6 @@ std::string GetBeaconPublicKeyFromContract(std::string sEncContract)
    if (vContract.size() < 4) return "";
    std::string sBeaconPublicKey = vContract[3];
    return sBeaconPublicKey;
-}
-
-bool VerifyCPIDSignature(std::string sCPID, std::string sBlockHash, std::string sSignature)
-{
-    std::string sBeaconPublicKey = GetBeaconPublicKey(sCPID, false);
-    std::string sConcatMessage = sCPID + sBlockHash;
-    bool bValid = CheckMessageSignature("R","cpid", sConcatMessage, sSignature, sBeaconPublicKey);
-    return bValid;
 }
 
 std::string SignBlockWithCPID(std::string sCPID, std::string sBlockHash)
@@ -3734,7 +3725,7 @@ double GetMoneySupplyFactor()
         double AvgMagnitude = structcpid.NetworkAvgMagnitude;
         double TotalNetworkMagnitude = TotalCPIDS*AvgMagnitude;
         if (TotalNetworkMagnitude < 100) TotalNetworkMagnitude=100;
-        double MoneySupply = DoubleFromAmount(pindexBest->nMoneySupply);
+        double MoneySupply = DoubleFromAmount(Best.top->nMoneySupply);
         double Factor = (MoneySupply/TotalNetworkMagnitude+.01);
         return Factor;
 
@@ -5183,7 +5174,7 @@ Value listitem(const Array& params, bool fHelp)
                         entry.push_back(Pair("Network Max Daily Payments",MaximumEmission));
                         entry.push_back(Pair("Network Interest Paid (14 days)", stNet.InterestSubsidy));
                         entry.push_back(Pair("Network Avg Daily Interest", stNet.InterestSubsidy/14));
-                        double MoneySupply = DoubleFromAmount(pindexBest->nMoneySupply);
+                        double MoneySupply = DoubleFromAmount(Best.top->nMoneySupply);
                         entry.push_back(Pair("Total Money Supply", MoneySupply));
                         double iPct = ( (stNet.InterestSubsidy/14) * 365 / (MoneySupply+.01));
                         entry.push_back(Pair("Network Interest %", iPct));

@@ -7,29 +7,35 @@ BlockFinder::BlockFinder()
     : cache(nullptr)
 {}
 
+static inline void UseIfCloser(CBlockIndex*& index, int height, CBlockIndex* ptr)
+{
+    if(ptr && abs(height-ptr->nHeight)<abs(index->nHeight-height))
+        index=ptr;
+}
+    
+
 CBlockIndex* BlockFinder::FindByHeight(int height)
 {
     // If the height is at the bottom half of the chain, start searching from
     // the start to the end, otherwise search backwards from the end.
-    CBlockIndex *index = height < nBestHeight / 2
+    // Brod: changed to one third. old blocks are less likely to be loaded
+    if(!Best.top) return nullptr;
+    CBlockIndex *index = height < Best.GetHeight() / 3
             ? pindexGenesisBlock
-            : pindexBest;
+            : Best.top;
+
+    //Brod: If the cached ptr is closed, use it
+    UseIfCloser(index, height, cache);
+    UseIfCloser(index, height, Best.p6m);
+    UseIfCloser(index, height, Best.p14d);
+            
+    // Traverse towards the tail.
+    while (index && index->HasPrev() && index->nHeight > height)
+        index = index->GetPrev();
     
-    if(index != nullptr)
-    {
-        // Use the cache if it's closer to the target than the current
-        // start block.
-        if (cache && abs(height - index->nHeight) > std::abs(height - cache->nHeight))
-            index = cache;
-        
-        // Traverse towards the tail.
-        while (index && index->pprev && index->nHeight > height)
-            index = index->pprev;
-        
-        // Traverse towards the head.
-        while (index && index->pnext && index->nHeight < height)
-            index = index->pnext;
-    }
+    // Traverse towards the head.
+    while (index && index->HasNext() && index->nHeight < height)
+        index = index->GetNext();
    
     cache = index;
     return index;  

@@ -51,8 +51,8 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
     diff.push_back(Pair("proof-of-work",        GetDifficulty()));
-    diff.push_back(Pair("proof-of-research",    GetDifficulty(GetLastBlockIndex(pindexBest, true))));
-    diff.push_back(Pair("proof-of-stake",    GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    diff.push_back(Pair("proof-of-research",    GetDifficulty(GetLastBlockIndex(Best.top, true))));
+    diff.push_back(Pair("proof-of-stake",    GetDifficulty(GetLastBlockIndex(Best.top, true))));
     diff.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     obj.push_back(Pair("difficulty",    diff));
     obj.push_back(Pair("blockvalue",    (uint64_t)GetProofOfWorkReward(0,  GetAdjustedTime(),1)));
@@ -122,7 +122,7 @@ Value getstakinginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocktx", (uint64_t)nLastBlockTx));
     obj.push_back(Pair("pooledtx", (uint64_t)mempool.size()));
 
-    obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    obj.push_back(Pair("difficulty", GetDifficulty(GetLastBlockIndex(Best.top, true))));
     obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
 
     obj.push_back(Pair("weight", (uint64_t)nWeight));
@@ -147,7 +147,7 @@ Value getworkex(const Array& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(-10, "Gridcoin is downloading blocks...");
 
-    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+    if (Best.GetHeight() >= LAST_POW_BLOCK)
         throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
@@ -162,10 +162,10 @@ Value getworkex(const Array& params, bool fHelp)
         static CBlockIndex* pindexPrev;
         static int64_t nStart;
         static CBlock* pblock;
-        if (pindexPrev != pindexBest ||
+        if (pindexPrev != Best.top ||
             (nTransactionsUpdated != nTransactionsUpdatedLast &&  GetAdjustedTime() - nStart > 60))
         {
-            if (pindexPrev != pindexBest)
+            if (pindexPrev != Best.top)
             {
                 // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
@@ -174,7 +174,7 @@ Value getworkex(const Array& params, bool fHelp)
                 vNewBlock.clear();
             }
             nTransactionsUpdatedLast = nTransactionsUpdated;
-            pindexPrev = pindexBest;
+            pindexPrev = Best.top;
             nStart =  GetAdjustedTime();
 
             // Create new block
@@ -288,7 +288,7 @@ Value getwork(const Array& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Gridcoin is downloading blocks...");
 
-    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+    if (Best.GetHeight() >= LAST_POW_BLOCK)
         throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
@@ -303,10 +303,10 @@ Value getwork(const Array& params, bool fHelp)
         static CBlockIndex* pindexPrev;
         static int64_t nStart;
         static CBlock* pblock;
-        if (pindexPrev != pindexBest ||
+        if (pindexPrev != Best.top ||
             (nTransactionsUpdated != nTransactionsUpdatedLast &&  GetAdjustedTime() - nStart > 60))
         {
-            if (pindexPrev != pindexBest)
+            if (pindexPrev != Best.top)
             {
                 // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
@@ -318,9 +318,9 @@ Value getwork(const Array& params, bool fHelp)
             // Clear pindexPrev so future getworks make a new block, despite any failures from here on
             pindexPrev = NULL;
 
-            // Store the pindexBest used before CreateNewBlock, to avoid races
+            // Store the Best.top used before CreateNewBlock, to avoid races
             nTransactionsUpdatedLast = nTransactionsUpdated;
-            CBlockIndex* pindexPrevNew = pindexBest;
+            CBlockIndex* pindexPrevNew = Best.top;
             nStart =  GetAdjustedTime();
 
             // Create new block
@@ -436,7 +436,7 @@ Value getblocktemplate(const Array& params, bool fHelp)
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Gridcoin is downloading blocks...");
 
-    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+    if (Best.GetHeight() >= LAST_POW_BLOCK)
         throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     static CReserveKey reservekey(pwalletMain);
@@ -446,15 +446,15 @@ Value getblocktemplate(const Array& params, bool fHelp)
     static CBlockIndex* pindexPrev;
     static int64_t nStart;
     static CBlock* pblock;
-    if (pindexPrev != pindexBest ||
+    if (pindexPrev != Best.top ||
         (nTransactionsUpdated != nTransactionsUpdatedLast &&  GetAdjustedTime() - nStart > 5))
     {
         // Clear pindexPrev so future calls make a new block, despite any failures from here on
         pindexPrev = NULL;
 
-        // Store the pindexBest used before CreateNewBlock, to avoid races
+        // Store the Best.top used before CreateNewBlock, to avoid races
         nTransactionsUpdatedLast = nTransactionsUpdated;
-        CBlockIndex* pindexPrevNew = pindexBest;
+        CBlockIndex* pindexPrevNew = Best.top;
         nStart =  GetAdjustedTime();
 
         // Create new block

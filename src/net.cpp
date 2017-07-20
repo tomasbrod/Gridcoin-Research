@@ -933,7 +933,7 @@ void CNode::PushVersion()
     CAddress addrMe = GetLocalAddress(&addr);
     RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
     if (fDebug10) printf("send version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n",
-        PROTOCOL_VERSION, nBestHeight, addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
+        PROTOCOL_VERSION, Best.GetHeight(), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
 
     std::string sboinchashargs = DefaultBoincHashArgs();
     uint256 boincHashRandNonce = GetRandHash();
@@ -947,7 +947,7 @@ void CNode::PushVersion()
     PushMessage("aries", PROTOCOL_VERSION, nonce, pw1,
                 mycpid, mycpid, acid, nLocalServices, nTime, addrYou, addrMe,
                 nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()),
-                nBestHeight, sGRCAddress);
+                Best.GetHeight(), sGRCAddress);
 
 
 }

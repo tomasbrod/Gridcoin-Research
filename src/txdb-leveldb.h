@@ -51,8 +51,15 @@ protected:
     // Returns true and sets (value,false) if activeBatch contains the given key
     // or leaves value alone and sets deleted = true if activeBatch contains a
     // delete for it.
-    bool ScanBatch(const CDataStream &key, std::string *value, bool *deleted) const;
+    bool ScanBatch(const std::string &key, std::string *value, bool *deleted) const;
 
+public:
+    bool Read(const std::string& strKey, std::string& strValue);
+    bool Write(const std::string& strKey, const std::string& strValue);
+    bool Erase(const std::string& strKey);
+    bool Exists(const std::string& strKey);
+
+protected:
     template<typename K, typename T>
     bool Read(const K& key, T& value)
     {
@@ -61,27 +68,9 @@ protected:
         ssKey << key;
         std::string strValue;
 
-        bool readFromDb = true;
-        if (activeBatch) {
-            // First we must search for it in the currently pending set of
-            // changes to the db. If not found in the batch, go on to read disk.
-            bool deleted = false;
-            readFromDb = ScanBatch(ssKey, &strValue, &deleted) == false;
-            if (deleted) {
-                return false;
-            }
-        }
-        if (readFromDb) {
-            leveldb::Status status = pdb->Get(leveldb::ReadOptions(),
-                                              ssKey.str(), &strValue);
-            if (!status.ok()) {
-                if (status.IsNotFound())
-                    return false;
-                // Some unexpected error.
-                printf("LevelDB read failure: %s\n", status.ToString().c_str());
-                return false;
-            }
-        }
+        if(!Read(ssKey.str(),strValue))
+            return false;
+
         // Unserialize value
         try {
             CDataStream ssValue(strValue.data(), strValue.data() + strValue.size(),
@@ -107,16 +96,7 @@ protected:
         ssValue.reserve(90000);
         ssValue << value;
 
-        if (activeBatch) {
-            activeBatch->Put(ssKey.str(), ssValue.str());
-            return true;
-        }
-        leveldb::Status status = pdb->Put(leveldb::WriteOptions(), ssKey.str(), ssValue.str());
-        if (!status.ok()) {
-            printf("LevelDB write failure: %s\n", status.ToString().c_str());
-            return false;
-        }
-        return true;
+        return Write(ssKey.str(), ssValue.str());
     }
 
     template<typename K>
@@ -130,12 +110,7 @@ protected:
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
-        if (activeBatch) {
-            activeBatch->Delete(ssKey.str());
-            return true;
-        }
-        leveldb::Status status = pdb->Delete(leveldb::WriteOptions(), ssKey.str());
-        return (status.ok() || status.IsNotFound());
+        return Erase(ssKey.str());
     }
 
     template<typename K>
@@ -146,16 +121,7 @@ protected:
         ssKey << key;
         std::string unused;
 
-        if (activeBatch) {
-            bool deleted;
-            if (ScanBatch(ssKey, &unused, &deleted) && !deleted) {
-                return true;
-            }
-        }
-
-
-        leveldb::Status status = pdb->Get(leveldb::ReadOptions(), ssKey.str(), &unused);
-        return status.IsNotFound() == false;
+        return Exists(ssKey.str());
     }
 
 
@@ -189,7 +155,7 @@ public:
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
-    bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
+    bool WriteBlockIndex(const CBlockIndex& blockindex);
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);
     bool ReadBestInvalidTrust(CBigNum& bnBestInvalidTrust);
