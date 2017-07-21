@@ -1117,7 +1117,6 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
 
             txnew.vout.push_back(CTxOut(0, CScript())); // First Must be empty
             txnew.vout.push_back(CTxOut(nCredit, scriptPubKeyOut));
-            //txnew.vout.push_back(CTxOut(0, scriptPubKeyOut));
 
             printf("CreateCoinStake: added kernel type=%d credit=%f\n", whichType,CoinToDouble(nCredit));
             msMiningErrors5+="Found Kernel "+RoundToString(CoinToDouble(nCredit),0)+"; ";
@@ -1236,13 +1235,36 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
     }
 
     //fill in reward and boinc
-    blocknew.vtx[1].vout[1].nValue += nReward;
+    std::vector<CTxOut> &txout = blocknew.vtx[1].vout;
+    assert(txout.size()==2);
+    txout[1].nValue += nReward;
     blocknew.vtx[0].hashBoinc= SerializedBoincData;
     msMiningErrors5+="Added Reward "+RoundToString(mint,3)
         +"("+RoundToString(CoinToDouble(nFees),4)+" "
         +RoundToString(out_interest,2)+" "
         +RoundToString(OUT_POR,2)+"); ";
+
     return true;
+}
+
+void StakeSplitOutputs(CBlock &blocknew)
+{
+    std::vector<CTxOut> &txout = blocknew.vtx[1].vout;
+    assert(txout.size()==2);
+    int64_t nReward = txout[1].nValue;
+
+    // split the stake output if over 100
+
+    if (nReward > 200*COIN)
+    {
+        txout.push_back(CTxOut(
+            nReward / 2,
+            txout[1].scriptPubKey
+        ));
+        txout[1].nValue = nReward - txout[2].nValue;
+    }
+
+    return;
 }
 
 bool IsMiningAllowed(CWallet *pwallet)
@@ -1347,6 +1369,9 @@ void StakeMiner(CWallet *pwallet)
     if( !CreateGridcoinReward(StakeBlock,StakeCoinAge,pindexPrev) )
         continue;
     printf("StakeMiner: added gridcoin reward to coinstake\n");
+
+    // * split the output of stake and add additional inputs
+    StakeSplitOutputs(StakeBlock);
 
     // * sign boinchash, coinstake, wholeblock
     if( !SignStakeBlock(StakeBlock,BlockKey,StakeInputs,pwallet) )
