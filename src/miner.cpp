@@ -470,14 +470,12 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
 
         CTxIndex txindex;
         {
-            LOCK2(cs_main, wallet.cs_wallet);
             if (!txdb.ReadTxIndex(pcoin.first->GetHash(), txindex))
                 continue; //error?
         }
 
         CBlock CoinBlock; //Block which contains CoinTx
         {
-            LOCK2(cs_main, wallet.cs_wallet);
             if (!CoinBlock.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false))
                 continue;
         }
@@ -815,6 +813,9 @@ void StakeMiner(CWallet *pwallet)
             MinerStatus.Version= StakeBlock.nVersion;
         }
 
+        // This is not ideal. Lock everything here, prevent data races.
+        LOCK2(cs_main, pwallet->cs_wallet);
+
         if(!IsMiningAllowed(pwallet))
         {
             LOCK(MinerStatus.lock);
@@ -860,7 +861,6 @@ void StakeMiner(CWallet *pwallet)
         }
 
         // * delegate to ProcessBlock
-        LOCK(cs_main);
         if (!ProcessBlock(NULL, &StakeBlock, true))
         {
             { LOCK(MinerStatus.lock);
