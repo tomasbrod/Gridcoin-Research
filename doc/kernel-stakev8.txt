@@ -1,0 +1,90 @@
+Gridcoin PoS kernel v8
+=============================
+
+Author: [Tomáš Brada][brod].
+With credits to the PeerCoin and BlackCoin developers.
+
+[brod](https://github.com/tomasbrod)
+
+This document describes internals, effects and design decisions of Gridcoin PoS
+kernel *stakev8*. This V8 kernel will be used in blocks version 8 and replaces
+the previous kernel, V3, which was used in in blocks version 7.
+
+Versions 4-7 were skipped and the kernel was simply named after the block
+version in order to reduce the amount of separate version numbers needed.
+
+The most notable effect is that _magnitude_ does no longer affect your stake
+weight. Investors and BOINCers now have the same chances to mint a block.
+This drastic change was needed to eliminate an exploit. On the other hand a
+compensation for less rich BOINCers is already being designed.
+
+## Basics
+
+To create a next block in chain, miner must find a valid proof of *something*
+for it. Gridcoin is a PoS coin so the permission to create a next block is
+derived from the coins they own. There is also PoW, where the permission is
+derived from useless computation work the miner has to do.
+
+First a data string (called kernel) is formed from the kernel components,
+then the kernel is hashed to obtain a proof hash, and then this proof hash
+is compared to the current difficulty target. Both proof hash and target are (big)
+numbers. The kernel forms a valid proof only if the proof hash is less than
+the difficulty target.
+
+## Change list
+
+What changed in stake weight calculation and why:
+
+* RSA_WEIGHT (and thus magnitude) was removed from the weight calculation.
+  - multiplication issue
+  - not checked when receiving 
+
+What changed in stake kernel and why:
+
+* removed RSA_WEIGHT was removed from kernel
+  - iterable nonce
+* Explicitly mask timestamps with STAKE_TIMESTAMP_MASK
+  - just to be sure
+  - mask was enforced elsewhere in prior version
+* removed por_nonde
+  - iterable nonce
+* added Stake Modifier
+  - prevent precomputation
+
+
+    ss << RSA_WEIGHT << CoinBlock.nTime << CoinTx.nTime << CoinTx.GetHash() << CoinTxN << nTimeTx <<  por_nonce;
+
+
+## New Components
+
+Stake weight of *Mature Unspent Transaction Output* (MUTXO) is a linear
+function of only it's value.
+
+Stake kernel is composed out of the following items:
+
+* current Stake Modifier
+  - a number composed of enthropy gathered from past blocks
+  - anti-pre-computation
+* Masked timestamp of the block where transaction whose output is used in this kernel is from
+  - identification of the UTXO
+* hash of the abovementioned transaction
+  - identification of the UTXO
+* output number of the kernel utxo
+  - identification of the UTXO
+* current masked timestamp
+  - time-bound iterable
+  - a value that makes the kernel change in controlled manner
+
+## Old Issues
+
+### Total defeat of PoS purpose
+
+### Multiplication issue
+
+### Unchecked newbie weight bonus
+
+### Precomputation
+
+## See also
+
+Blackcoin wiki
