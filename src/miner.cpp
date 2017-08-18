@@ -502,9 +502,17 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
 
         if(blocknew.nVersion==7)
         {
-            NetworkTimer();
             CoinWeight = CalculateStakeWeightV3(CoinTx,CoinTxN,GlobalCPUMiningCPID);
-            StakeKernelHash= CalculateStakeHashV3(CoinBlock,CoinTx,CoinTxN,txnew.nTime,GlobalCPUMiningCPID,mdPORNonce);
+            CBigNum StakeTarget;
+            StakeTarget.SetCompact(blocknew.nBits);
+            StakeTarget*=CoinWeight;
+            NetworkTimer();
+            int iter=10000;
+            do {
+                StakeKernelHash= CalculateStakeHashV3(CoinBlock,CoinTx,CoinTxN,txnew.nTime,GlobalCPUMiningCPID,mdPORNonce);
+                if(StakeKernelHash <= StakeTarget)
+                    break;
+            } while( --iter>0 );
         }
         else if(blocknew.nVersion==8)
         {
@@ -811,6 +819,12 @@ void StakeMiner(CWallet *pwallet)
                 StakeBlock.nVersion = 8;
             if(!fTestNet && (pindexPrev->nHeight+2) > 1001000)
                 StakeBlock.nVersion = 8;
+
+            if(!fTestNet && pindexPrev->nHeight<999998)
+            {
+                MinerStatus.ReasonNotStaking+="Waiting for block 999998; ";
+                continue;
+            }
 
             MinerStatus.Version= StakeBlock.nVersion;
         }
