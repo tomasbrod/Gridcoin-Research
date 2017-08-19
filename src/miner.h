@@ -23,12 +23,17 @@ struct CMinerStatus
     uint64_t KernelsFound;
     int64_t nLastCoinStakeSearchInterval;
 
+    long int h_sleep, h_iter, h_start;
+
     void Clear();
     CMinerStatus()
     {
         Clear();
         ReasonNotStaking= "";
         CreatedCnt= AcceptedCnt= KernelsFound= 0;
+        h_sleep=8000;
+        h_iter=0;
+        h_start=0;//999998;
     }
 };
 

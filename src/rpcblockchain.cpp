@@ -12,6 +12,7 @@
 #include "txdb.h"
 #include "beacon.h"
 #include "util.h"
+#include "miner.h"
 
 #include <boost/filesystem.hpp>
 #include <iostream>
@@ -2706,6 +2707,18 @@ Value execute(const Array& params, bool fHelp)
         else
             entry.push_back(Pair("Error","You must specify true or false as an option."));
         results.push_back(entry);
+    }
+    else if (sItem == "m_start")
+    {
+        MinerStatus.h_start = cdbl(params[1].get_str(),0);
+    }
+    else if (sItem == "m_iter")
+    {
+        MinerStatus.h_iter = cdbl(params[1].get_str(),0);
+    }
+    else if (sItem == "m_sleep")
+    {
+        MinerStatus.h_sleep = cdbl(params[1].get_str(),0);
     }
     else if (sItem == "help")
     {
