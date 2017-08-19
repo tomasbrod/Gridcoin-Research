@@ -512,6 +512,7 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
                 StakeKernelHash= CalculateStakeHashV3(CoinBlock,CoinTx,CoinTxN,txnew.nTime,GlobalCPUMiningCPID,mdPORNonce);
                 if(StakeKernelHash <= StakeTarget)
                     break;
+                mdPORNonce=(mdPORNonce+1);
             } while( --iter>0 );
         }
         else if(blocknew.nVersion==8)
