@@ -713,6 +713,7 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
 
     printf("CreateGridcoinReward: for %s mint %f {RSAWeight %f} Research %f, Interest %f \r\n",
         miningcpid.cpid.c_str(), mint, (double)RSA_WEIGHT,miningcpid.ResearchSubsidy,miningcpid.InterestSubsidy);
+    printf("CreateGridcoinReward: {mintlimit %f}\n",mintlimit);
 
     //INVESTORS
     if(blocknew.nVersion < 8) mintlimit = std::max(mintlimit, 0.0051);
