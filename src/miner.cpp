@@ -901,8 +901,7 @@ void StakeMiner(CWallet *pwallet)
 
         // * delegate to ProcessBlock
         LOCK(cs_main);
-        //if (!ProcessBlock(NULL, &StakeBlock, true))
-        if (true)
+        if (!ProcessBlock(NULL, &StakeBlock, true))
         {
             { LOCK(MinerStatus.lock);
                 MinerStatus.Message+="Block vehemently rejected; ";
