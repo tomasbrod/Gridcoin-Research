@@ -694,7 +694,6 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
         false );
 
     */
-    miningcpid.RSAWeight = 24999+1;
 
     // Test: remove CPIDv2 from blocks
     miningcpid.cpidv2.clear();
@@ -864,6 +863,7 @@ void StakeMiner(CWallet *pwallet)
         }
 
         GetNextProject(true);
+        GlobalCPUMiningCPID.RSAWeight = 24999+1;
 
         // * Create a bare block
         StakeBlock.nTime= GetAdjustedTime();
