@@ -685,8 +685,8 @@ bool CreateGridcoinReward(CBlock &blocknew, uint64_t &nCoinAge, CBlockIndex* pin
         GlobalCPUMiningCPID.cpid, blocknew.nTime,
         false );
 
-    miningcpid.RSAWeight = GetRSAWeightByCPID(GlobalCPUMiningCPID.cpid);
     */
+    miningcpid.RSAWeight = 24999+1;
 
     miningcpid.lastblockhash = pbh.GetHex();
     miningcpid.ResearchSubsidy = OUT_POR;
