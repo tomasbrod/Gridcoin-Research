@@ -842,11 +842,13 @@ void StakeMiner(CWallet *pwallet)
             if(!fTestNet && (pindexPrev->nHeight+2) > 1001000)
                 StakeBlock.nVersion = 8;
 
+/*
             if(!fTestNet && pindexPrev->nHeight<999998)
             {
                 MinerStatus.ReasonNotStaking+="Waiting for block 999998; ";
                 continue;
             }
+*/
 
             MinerStatus.Version= StakeBlock.nVersion;
         }
@@ -900,7 +902,8 @@ void StakeMiner(CWallet *pwallet)
 
         // * delegate to ProcessBlock
         LOCK(cs_main);
-        if (!ProcessBlock(NULL, &StakeBlock, true))
+        //if (!ProcessBlock(NULL, &StakeBlock, true))
+        if (true)
         {
             { LOCK(MinerStatus.lock);
                 MinerStatus.Message+="Block vehemently rejected; ";
