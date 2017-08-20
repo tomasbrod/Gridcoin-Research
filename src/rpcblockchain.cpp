@@ -4866,3 +4866,47 @@ json_spirit::Value rpc_getblockstats(const json_spirit::Array& params, bool fHel
     }
     return result1;
 }
+
+json_spirit::Value rpc_writeplotdiff(const json_spirit::Array& params, bool fHelp)
+{
+    if(fHelp)
+        throw runtime_error(
+            "writeplotdiff TODO\n");
+    /* count, high */
+    long highheight= INT_MAX;
+    long maxblocks= 100000;
+    /* count highheight */
+    if(params.size()>=2)
+        maxblocks= cdbl(params[1].get_str(),0);
+    if(params.size()>=3)
+        highheight= cdbl(params[2].get_str(),0);
+    CBlockIndex* cur;
+    Object result1;
+    {
+        LOCK(cs_main);
+        cur= pindexBest;
+    }
+    int64_t blockcount = 0;
+    boost::filesystem::path o_path = GetDataDir() / "reports" / ( "diff_" + std::to_string(GetTime()) + ".txt" );
+    boost::filesystem::create_directories(o_path.parent_path());
+    ofstream Output;
+    Output.open (o_path.string().c_str());
+    Output.imbue(std::locale::classic());
+    Output << std::fixed << std::setprecision(4);
+    for( ; (cur
+            &&( blockcount<maxblocks )
+        );
+        cur= cur->pprev
+        )
+    {
+        if(cur->nHeight>highheight)
+            continue;
+        blockcount++;
+        double diff = GetDifficulty(cur);
+        Output << cur->nHeight << " " << diff << '\n';
+    }
+
+    result1.push_back(Pair("file", o_path.string()));
+    Output.close();
+    return result1;
+}
