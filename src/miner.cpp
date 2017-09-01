@@ -841,9 +841,7 @@ void StakeMiner(CWallet *pwallet)
 
             //New version
             StakeBlock.nVersion = 7;
-            if(fTestNet && (pindexPrev->nHeight+2) > 312000)
-                StakeBlock.nVersion = 8;
-            if(!fTestNet && (pindexPrev->nHeight+2) > 1001000)
+            if(IsV8Enabled(pindexPrev->nHeight+1))
                 StakeBlock.nVersion = 8;
 
             if(pindexPrev->nHeight < MinerStatus.h_start)
