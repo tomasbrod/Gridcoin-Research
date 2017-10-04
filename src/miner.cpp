@@ -793,6 +793,54 @@ bool CreateGridcoinReward(CBlock &blocknew, MiningCPID& miningcpid, uint64_t &nC
     return true;
 }
 
+bool StakeAdditionalInputs( CBlock &blocknew,
+    vector<const CWalletTx*> &StakeInputs,
+    uint64_t &CoinAge, CWallet &wallet )
+{
+    CTxDB txdb("r");
+    CTransaction &txnew = blocknew.vtx[1]; // second tx is coinstake
+
+    // Choose coins to use
+    set <pair <const CWalletTx*,unsigned int> > CoinsToStake;
+
+    int64_t nValueIn = 0;
+    //Request all the coins here, check reserve later
+
+    if ( !wallet.SelectCoinsForStaking(MAX_MONEY, txnew.nTime, CoinsToStake, nValueIn) )
+    {
+        if (fDebug) printf("StakeAdditionalInputs: SelectCoinsForStaking() failed\n");
+        return false;
+    }
+
+    for(const auto& pcoin : CoinsToStake)
+    {
+        const CTransaction &CoinTx =*pcoin.first; //transaction that produced this coin
+        unsigned int CoinTxN =pcoin.second; //index of this coin inside it
+        const CTxIn CoinIn(CoinTx.GetHash(), CoinTxN);
+
+        // Skip duplicates
+        if(txnew.vin[0].prevout==CoinIn.prevout)
+            continue;
+        /*
+        if (CoinTx.vout[CoinTxN].nValue > BalanceToStake)
+            continue;
+        */
+        uint64_t nInputLocal = CoinTx.vout[CoinTxN].nValue;
+        txnew.vin.push_back(CoinIn);
+        StakeInputs.push_back(pcoin.first);
+        txnew.vout[1].nValue += nInputLocal;
+        if(fDebug) printf("StakeAdditionalInputs: added value= %f\n",CoinToDouble(nInputLocal));
+    }
+
+    uint64_t CoinAgeLocal;
+    if (!txnew.GetCoinAge(txdb, CoinAgeLocal))
+        return error("StakeAdditionalInputs: failed to calculate coin age");
+    CoinAge = CoinAgeLocal;
+    printf("StakeAdditionalInputs: New CoinAge = %" PRId64 "\n", CoinAge);
+
+    return true;
+}
+
 bool IsMiningAllowed(CWallet *pwallet)
 {
     bool status = true;
@@ -882,6 +930,9 @@ void StakeMiner(CWallet *pwallet)
         if( !CreateRestOfTheBlock(StakeBlock,pindexPrev) )
             continue;
         printf("StakeMiner: created rest of the block\n");
+
+        // * add more inputs (for interest and consolidation)
+        StakeAdditionalInputs(StakeBlock,StakeInputs,StakeCoinAge,*pwallet);
 
         // * add gridcoin reward to coinstake
         if( !CreateGridcoinReward(StakeBlock,BoincData,StakeCoinAge,pindexPrev) )
