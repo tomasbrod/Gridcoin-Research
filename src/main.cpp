@@ -2680,31 +2680,8 @@ void SlidingWindowSlide(CTxDB &batch,
 /* Transaction Contract hangling (hashBoinc message)
 */
 
-void DisconnectContract(CTxDB& txdb,CTransaction& tx)
-{
-    const uint256 txhash = tx.GetHash();
-    auto ppmsg = Best.MsgByTx.find(txhash);
-    if(ppmsg==Best.MsgByTx.end())
-        return;
-    CTxMessage & msg = *ppmsg->second;
-    assert(!msg.vTxHash.empty());
-    if (msg.vTxHash.back() == txhash)
-    {
-        //update the message struct
-        msg.vTxHash.pop_back();
-        msg.fLoaded = false;
-        msg.nTime = tx.nTime;
-        //update MsgByTx with the new hash
-        Best.MsgByTx.erase(ppmsg);
-        if(!msg.vTxHash.empty())
-            Best.MsgByTx[msg.vTxHash.back()] = &msg;
-        //save
-        msg.SaveDb(txdb);
-    }
-}
-
 bool ContractExtractFromBB(const std::string & BB,
-    std::string &sType,std::string &sName,bool& fDelete,
+    CTxMessage::EMessageType &eType,std::string &sName,bool& fDelete,
     std::string &sPubKey,std::string& sValue,std::string& sSignature)
 {
 
@@ -2722,26 +2699,115 @@ bool ContractExtractFromBB(const std::string & BB,
         fDelete=true;
     else return false;
 
+    if(sType=="poll")
+        etype = CTxMessage::mpoll;
+    else if(sType=="vote")
+        etype = CTxMessage::mvote;
+    else if(sType=="beacon")
+        etype = CTxMessage::mcpid;
+    else if(sType=="project")
+        etype = CTxMessage::mproject;
+    // wrong message type field
+    else return false;
+
     sValue     = ExtractXML(BB,"<MV>","</MV>");
     sSignature = ExtractXML(BB,"<MS>","</MS>");
     sPubKey    = ExtractXML(BB,"<MPK>","</MPK>");
     return true;
 }
 
+void MemorizeContract_cpid(CTxDB& txdb, const CTransaction& tx, const bool fcheck, const std::string& sMessageName, const std::string& sMessageValue, const bool fdelete)
+{
+    if(sMessageName=="INVESTOR"||sMessageName==""||sMessageName=="POOL")
+        return;
+    uint128 bincpid (sMessageName); //does not throw, skips invalid chars
+    StructCPID2* stc = Best.GetCPID(bincpid);
+    CPubKey PubKey;
+    if(!fdelete)
+    {
+        std::string out_cpid, out_address,sPublicKey;
+        GetBeaconElements(sMessageValue, out_cpid, out_address, sPublicKey);
+        if(out_cpid!=sMessageName)
+            return;
+        PubKey = ParseHex(sPublicKey);
+        if(!PubKey.IsValid())
+            return;
+    }
+    if(stc && !fdelete && fcheck && stc->IsValid())
+    {
+        //cpid exists, trying to overwrite, new contract, old still valid
+        if (PubKey!=stc->PublicKey)
+        {
+            printf("Beacon Overwrite denied, keys dont match and not expired\n");
+            return;
+        }
+    }
+    if(!stc)
+    {
+        //not yet in db, initialize new cpid
+        if(fdelete)
+            return;
+        stc = new StructCPID2;
+        ...
+    }
+
+    stc->BeaconPublicKey=PubKey;
+    stc->BeaconTime=tx.nTime;
+    if(fcheck)
+        stc->message.AddTrx(tx);
+    stc->SaveDb(txdb);
+    return;
+}
+
+void ReloadContracts(CTxDB& txdb, const std::set<CTxMessage*>& vContractsToReload)
+{
+    for( CTxMessage* msg : vContractsToReload)
+    {
+
+    std::set<CTxMessage*> vContractsToReload;
+    for(CBlockIndex *cur= Best.top;
+        cur && cur!=proot;
+        cur=cur->GetPrev())
+    {
+        CBlock curblk;
+        if(!curblk.ReadFromDisk(cur))
+            return error("BranchDisconnect: ReadFromDisk failed");
+        if(!curblk.DisconnectBlock(batch, cur, vContractsToReload))
+            return error("BranchDisconnect: DisconnectBlock failed");
+    }
+
+    ReloadContracts(vContractsToReload);
+    //load previous version
+    if(!msg.vTxHash.empty())
+        const uint256 txphash = msg.vTxHash.back();
+        CTransaction txp;
+        uint256 hashBlock;
+        if(!GetTransaction(txphash, txp, hashBlock))
+            throw error("DisconnectContract: Failed to load previous version");
+    //extract fields
+    std::string sMessageName,sPublicKey, sMessageValue, sSignature;
+    CTxMessage::EMessageType type;
+    bool fdelete;
+    if  ( !ContractExtractFromBB(tx.hashBoinc,
+            type, sMessageName, fdelete,
+            sPublicKey, sMessageValue, sSignature)
+        )
+        return;
+
+    // Delegate the contract to specific handler
+    if(type == CTxMessage:mcpid)
+        MemorizeContract_cpid(tx,false,sMessageName,sMessageValue,fdelete);
+}
+
 void MemorizeContract(CTxDB& txdb, const CTransaction& tx, CBlockIndex* pindex)
 {
-    /*
-        parse the msg out of hashBoinc
-        handle special message types
-        verify signature
-        record
-    */
 
-    std::string sMessageType, sMessageName;
+    std::string sMessageName;
+    CTxMessage::EMessageType type;
     bool fdelete;
     std::string sPublicKey, sMessageValue, sSignature;
     if  ( !ContractExtractFromBB(tx.hashBoinc,
-            sMessageType, sMessageName, fdelete,
+            type, sMessageName, fdelete,
             sPublicKey, sMessageValue, sSignature)
         )
         return;
@@ -2752,37 +2818,20 @@ void MemorizeContract(CTxDB& txdb, const CTransaction& tx, CBlockIndex* pindex)
         return;
 
     // Override public key for some message types
-    if (sMessageType=="poll" || sMessageType=="vote" || sMessageType=="beacon")
+    switch(type)
     {
-        if (fdelete)
-            sPublicKey = msMasterProjectPublicKey;
-        else
-            sPublicKey = msMasterMessagePublicKey;
-    }
-    else if (sMessageType=="project" || sMessageType=="projectmapping")
-    {
-        sPublicKey=msMasterProjectPublicKey;
-    }
-    //todo: provision for new account and project contracts
-    else return; // unknown message, prevent spam
-
-    // consult previous version of the message
-    CTxMessage* pmsg = Best.GetMessage(sMessageType,sMessageName,pindex->nTime);
-
-    if (sMessageType=="beacon" && fdelete==false && pmsg)
-    {
-        std::string out_cpid, out_address;
-        std::string old_publickey, new_publickey;
-        GetBeaconElements(pmsg->sValue, out_cpid, out_address, old_publickey);
-        GetBeaconElements(sMessageValue, out_cpid, out_address, new_publickey);
-        if (old_publickey!=new_publickey)
-        {
-            printf("Beacon Overwrite denied, keys dont match and not expired\n");
-            return;
-        }
-        // the 5 month rule ignored, the keys are the same so nothing happens
+        CTxMessage::mpoll: CTxMessage::mvote: CTxMessage::mbeacon:
+            if (fdelete)
+                sPublicKey = msMasterProjectPublicKey;
+            else
+                sPublicKey = msMasterMessagePublicKey;
+            break;
+        CTxMessage::mproject: CTxMessage::mprojectmapping:
+            sPublicKey=msMasterProjectPublicKey;
+            break;
     }
 
+    // verify signature
     CHashWriter Hasher(0,0);
     Hasher.write(sMessageType.data(),sMessageType.size());
     Hasher.write(sMessageName.data(),sMessageName.size());
@@ -2793,6 +2842,11 @@ void MemorizeContract(CTxDB& txdb, const CTransaction& tx, CBlockIndex* pindex)
     std::vector<unsigned char> vchSig = vector<unsigned char>(sDecodedSig.begin(), sDecodedSig.end());
     if (!key.Verify(Hasher.GetHash(), vchSig)) return;
 
+    // Delegate the contract to specific handler
+    if(type == CTxMessage:mcpid)
+        MemorizeContract_cpid(tx,true,sMessageName,sMessageValue,fdelete);
+
+    /*
     // create, or find existing message struct
     CTxMessage & Msg = pmsg? *pmsg : Best.msg[sMessageType+";"+sMessageName];
     if (!Msg.vTxHash.empty())
@@ -2812,6 +2866,7 @@ void MemorizeContract(CTxDB& txdb, const CTransaction& tx, CBlockIndex* pindex)
     }
 
     Msg.SaveDb(txdb);
+    */
 }
 
 CTxMessage* CBestChain::GetMessage(std::string sType, std::string sName, unsigned int nCurTime)
@@ -3571,7 +3626,7 @@ bool FindForkRoot(CBlockIndex *pnew, CBlockIndex*& cur, std::vector<CBlockIndex*
     return false;
 }
 
-bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, std::set<CTxMessage*> vContractsToReload)
 {
 
     // Disconnect in reverse order
@@ -3580,9 +3635,25 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     {
         if (!vtx[i].DisconnectInputs(txdb))
         {
-            bDiscTxFailed = true;
+            return error("DisconnectBlock: DisconnectInputs() Failed");
         }
-        DisconnectContract(txdb,vtx[i]);
+        //Disconnect Contract
+        {
+            const uint256 txhash = vtx[i].GetHash();
+            auto ppmsg = Best.MsgByTx.find(txhash);
+            if(ppmsg!=Best.MsgByTx.end())
+            {
+                CTxMessage & msg = *ppmsg->second;
+                //update the message struct
+                assert(!msg.vTxHash.empty());
+                assert(msg.vTxHash.back() == txhash);
+                Best.MsgByTx.erase(Msg.vTxHash.back());
+                msg.vTxHash.pop_back();
+                if(!msg.vTxHash.empty())
+                    Best.MsgByTx[msg.vTxHash.back()] = &msg;
+                vContractsToReload.insert(&msg);
+            }
+        }
     }
 
     // Update block index on disk without changing it in memory.
@@ -3602,15 +3673,16 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     BOOST_FOREACH(CTransaction& tx, vtx)
         SyncWithWallets(tx, this, false, false);
 
-    StructCPID stCPID = GetLifetimeCPID(pindex->GetCPID(),"DisconnectBlock()");
     // We normally fail to disconnect a block if we can't find the previous input due to "DisconnectInputs() : ReadTxIndex failed".  Imo, I believe we should let this call succeed, otherwise a chain can never be re-organized in this circumstance.
-    // TODO
+    /* TODO
     if (bDiscTxFailed && fDebug3) printf("!DisconnectBlock()::Failed, recovering. ");
+    */
     return true;
 }
 
 bool BranchDisconnect(CTxDB& batch, CBlockIndex *proot)
 {
+    std::set<CTxMessage*> vContractsToReload;
     for(CBlockIndex *cur= Best.top;
         cur && cur!=proot;
         cur=cur->GetPrev())
@@ -3618,9 +3690,11 @@ bool BranchDisconnect(CTxDB& batch, CBlockIndex *proot)
         CBlock curblk;
         if(!curblk.ReadFromDisk(cur))
             return error("BranchDisconnect: ReadFromDisk failed");
-        if(!curblk.DisconnectBlock(batch, cur))
+        if(!curblk.DisconnectBlock(batch, cur, vContractsToReload))
             return error("BranchDisconnect: DisconnectBlock failed");
     }
+
+    ReloadContracts(batch, vContractsToReload);
     return true;
 }
 

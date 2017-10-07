@@ -1495,6 +1495,28 @@ public:
 
 };
 
+class StructCPID2;
+
+class CTxMessage
+{
+public:
+    enum class EMessageType {
+        mcpid,
+        mpoll, mvote,
+        mproject,
+        mprojectmapping,
+    };
+    EMessageType tag;
+    std::string sMessageName;
+    
+    // transactions that have message with same type and identifier
+    // sorted by height asc
+    std::deque <uint256> vTxHash;
+    CTxMessage()
+        :nTime(0)
+        {}
+};
+
 class StructCPID2
 {
     public:
@@ -1509,7 +1531,9 @@ class StructCPID2
     // current superblock data
     double SbMagnitude; // magnitude as in last superblock
     // beacon data (cache)
-    std::vector<unsigned char> BeaconPublicKey; // pk for signing
+    CPubKey BeaconPublicKey; // pk for signing
+    unsigned int BeaconTime;
+    CTxMessage message;
     // lifetime averages for current reward calc
     // Lft=lifetime, D14=14day
     double LftFirstBlockTime; // time of first staked block
@@ -1533,26 +1557,11 @@ class StructCPID2
         SbMagnitude= LftFirstBlockTime= LftSumReward= LftSumMagnitude=0;
         LftCountReward= D14SumReward= LftSumInterest= D14SumInterest=0;
         D14SumMagnitude= LftCntMagnitude= D14CountReward=0;
+        BeaconTime=0;
+        message.tag = CTxMessage::mcpid;
+        message.pcpid = this;
     }
     bool LoadAccountKey(const MiningCPID& bb, CBlockIndex* pindex);
-};
-
-class CTxMessage
-{
-public:
-    bool fLoaded;
-    unsigned int nTime;
-    // transactions that have message with same type and identifier
-    // bound by p6m and top
-    // sorted by height asc
-    std::deque <uint256> vTxHash;
-    void SaveDb(CTxDB& batch);
-    //following only valid if fLoaded
-    bool fDelete;
-    unsigned int nBlock;
-    std::string sType;
-    std::string sName;
-    std::string sValue;
 };
 
 class CBestChain
@@ -1584,7 +1593,6 @@ public:
         std::deque <CBlockIndex*> vpBlocks; //list of SBs
     } super;
     // Network messages (cpid, project, poll, vote)
-    std::map<std::string, CTxMessage> msg;
     std::map<uint256, CTxMessage*> MsgByTx;
     // Neural things
     //...
