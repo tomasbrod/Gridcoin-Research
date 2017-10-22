@@ -34,8 +34,21 @@ else
     NEWINFO="// No build information available"
 fi
 
-NEWINFO="$NEWINFO
-//placeholder"
+BUILD_SEQ="$(echo "$INFO" |grep "BUILD_DESCSEQ" |cut -d' ' -f3 )"
+if [ "$BUILD_SEQ" -ge 0 ]; then
+	if [ $BUILD_SEQ -ge 99 ]; then
+		BUILD_SEQ=2
+	else
+		BUILD_SEQ=$((BUILD_SEQ+1))
+	fi
+	NEWINFO="$NEWINFO
+#define BUILD_DESCSEQ $BUILD_SEQ"
+else
+	NEWINFO="$NEWINFO
+#define BUILD_DESCSEQ 0"
+fi
+
+
 
 # only update build.h if necessary
 if [ "$INFO" != "$NEWINFO" ]; then
