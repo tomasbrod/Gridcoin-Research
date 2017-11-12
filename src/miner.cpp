@@ -586,7 +586,6 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
 
             txnew.vout.push_back(CTxOut(0, CScript())); // First Must be empty
             txnew.vout.push_back(CTxOut(nCredit, scriptPubKeyOut));
-            //txnew.vout.push_back(CTxOut(0, scriptPubKeyOut));
 
             printf("CreateCoinStake: added kernel type=%d credit=%f\n", whichType,CoinToDouble(nCredit));
 
@@ -781,7 +780,28 @@ bool CreateGridcoinReward(CBlock &blocknew, MiningCPID& miningcpid, uint64_t &nC
         +"("+RoundToString(CoinToDouble(nFees),4)+" "
         +RoundToString(out_interest,2)+" "
         +RoundToString(OUT_POR,2)+"); ";
+
     return true;
+}
+
+void StakeSplitOutputs(CBlock &blocknew)
+{
+    std::vector<CTxOut> &txout = blocknew.vtx[1].vout;
+    assert(txout.size()==2);
+    int64_t nReward = txout[1].nValue;
+
+    // split the stake output if over 100
+
+    if (nReward > 200*COIN)
+    {
+        txout.push_back(CTxOut(
+            nReward / 2,
+            txout[1].scriptPubKey
+        ));
+        txout[1].nValue = nReward - txout[2].nValue;
+    }
+
+    return;
 }
 
 bool IsMiningAllowed(CWallet *pwallet)
@@ -889,6 +909,9 @@ void StakeMiner(CWallet *pwallet)
         printf("StakeMiner: added gridcoin reward to coinstake\n");
 
         AddNeuralContractOrVote(StakeBlock, BoincData);
+
+        // * split the output of stake and add additional inputs
+        StakeSplitOutputs(StakeBlock);
 
         // * sign boinchash, coinstake, wholeblock
         if( !SignStakeBlock(StakeBlock,BlockKey,StakeInputs,pwallet,BoincData) )
