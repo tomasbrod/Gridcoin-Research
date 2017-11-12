@@ -644,6 +644,22 @@ bool SignStakeBlock(CBlock &block, CKey &key, vector<const CWalletTx*> &StakeInp
     return true;
 }
 
+std::string FindAddressForNeural(const CBlock &blocknew)
+{
+    // create a key from hash of previous block
+    uint160 inital_id;
+    memcpy(&inital_id, &blocknew.hashPrevBlock, 20);
+    CKeyID kid(inital_id);
+    for(int i=0; i<1000; ++i)
+    {
+        kid+=1;
+        const std::string address = CBitcoinAddress(kid).ToString();
+        if(IsNeuralNodeParticipant(address, blocknew.nTime))
+            return address;
+    }
+    return "NA";
+}
+
 int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
 {
     std::string sb_contract;
@@ -651,10 +667,32 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     if(OutOfSyncByAge())
         return printf("AddNeuralContractOrVote: Out Of Sync\n");
 
-    /* Retrive the neural Contract */
+    /* Retrive the neural Contract
     #if defined(WIN32) && defined(QT_GUI)
         sb_contract = qtGetNeuralContract("");
     #endif
+    */
+
+    /* Build a contract */
+    sb_contract =
+    "<AVERAGES>amicable numbers,109333.36,37386356;NeuralNetwork,2000000,20000000;</AVERAGES>"
+    "<QUOTES>btc,0;grc,0;<NOTES>Superblock created by hand. TomasBrod</NOTES>,0;</QUOTES>"
+    "<MAGNITUDES>"
+    "163f049997e8a2dee054d69a7720bf05,360;"
+    "1963a6f109ea770c195a0e1afacd2eba,360;"
+    "46f64d69eb8c5ee9cd24178b589af83f,360;"
+    "55cd02be28521073d367f7ca38615682,360;"
+    "5a094d7d93f6d6370e78a2ac8c008407,360;"
+    "7d0d73fe026d66fd4ab8d5d8da32a611,360;"
+    "8f2a530cf6f73647af4c680c3471ea65,305;"
+    "96c18bb4a02d15c90224a7138a540cf7,420;"
+    "9dbd2eb638bfda3dc573a8e5f1ce7a4a,360;"
+    "a914eba952be5dfcf73d926b508fd5fa,360;"
+    "e7f90818e3e87c0bbefe83ad3cfe27e1,360;"
+    "</MAGNITUDES>";
+
+    /* Search an eglible address to pas 25% restriction */
+    bb.GRCAddress = FindAddressForNeural(blocknew);
 
     const std::string sb_hash = GetQuorumHash(sb_contract);
 
