@@ -435,11 +435,18 @@ Value sendalert2(const Array& params, bool fHelp)
     alert.nRelayUntil = alert.nExpiration = GetAdjustedTime() + 24*60*60*params[4].get_int();
 
     std::vector<std::string> split_subver = split(params[2].get_str(), ",");
-    alert.setSubVer.insert(split_subver.begin(),split_subver.end());
+    for(std::string &s : split_subver)
+    {
+        if(s.empty())
+           continue;
+        alert.setSubVer.insert(s);
+    }
 
     std::vector<std::string> split_cancel = split(params[3].get_str(), ",");
     for(std::string &s : split_cancel)
     {
+        if(s.empty())
+           continue;
         int aver = RoundFromString(s, 0);
         alert.setCancel.insert(aver);
     }
