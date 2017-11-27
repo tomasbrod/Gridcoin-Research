@@ -4323,7 +4323,8 @@ json_spirit::Value rpc_getblockstats(const json_spirit::Array& params, bool fHel
 {
     if(fHelp || params.size() < 1 || params.size() > 3 )
         throw runtime_error(
-            "getblockstats mode [startheight [endheight]]\n"
+            "getblockstats 0 [startheight [endheight]]\n"
+            "getblockstats 1 [samples [endheight]]\n"
             "Show stats on what wallets and cpids staked recent blocks.\n");
     long mode= RoundFromString(params[0].get_str(),0);
     (void)mode; //TODO
@@ -4524,5 +4525,76 @@ json_spirit::Value rpc_getblockstats(const json_spirit::Array& params, bool fHel
         }
         result1.push_back(Pair("orgs", result));
     }
+    return result1;
+}
+
+json_spirit::Value rpc_writeplotdiff(const json_spirit::Array& params, bool fHelp)
+{
+    if(fHelp)
+        throw runtime_error(
+            "writeplotdiff [maxblocks points [endblock]] \n");
+    /* count, high */
+    long endblock= INT_MAX;
+    long maxpoints= 700;
+    int  smoothing= 22;
+    if(params.size()>=2)
+    {
+        long maxblocks= cdbl(params[0].get_str(),0);
+        maxpoints= cdbl(params[1].get_str(),0);
+        smoothing = maxblocks / maxpoints;
+        maxpoints = ceil(maxblocks / (double)smoothing);
+    }
+    if(params.size()>=3)
+        endblock= cdbl(params[2].get_str(),0);
+    CBlockIndex* cur;
+    Object result1;
+    {
+        LOCK(cs_main);
+        cur= pindexBest;
+    }
+    int64_t blockcount = 0;
+    long points = 0;
+    long samples = 0;
+    double diffsum = 0;
+    double diffmin = INT_MAX;
+    double diffmax = 0;
+    boost::filesystem::path o_path = GetDataDir() / "reports" / ( "diff_" + std::to_string(GetTime()) + ".txt" );
+    boost::filesystem::create_directories(o_path.parent_path());
+    ofstream Output;
+    Output.open (o_path.string().c_str());
+    Output.imbue(std::locale::classic());
+    Output << std::fixed << std::setprecision(4);
+    for( ; (cur
+            &&( points<=maxpoints )
+        );
+        cur= cur->pprev
+        )
+    {
+        if(cur->nHeight>endblock)
+            continue;
+        blockcount++;
+        double diff = GetDifficulty(cur);
+        diffsum+= diff;
+        diffmin=std::min(diffmin,diff);
+        diffmax=std::max(diffmax,diff);
+        samples++;
+        if(samples>=smoothing)
+        {
+            const double avgdiff= diffsum / samples;
+            int midheight = cur->nHeight + (smoothing/2);
+            Output << midheight << " " << avgdiff << " " << diffmin << " " << diffmax << '\n';
+            samples = 0;
+            diffsum = 0;
+            diffmin = INT_MAX;
+            diffmax = 0;
+            points++;
+        }
+    }
+
+    result1.push_back(Pair("file", o_path.string()));
+    result1.push_back(Pair("points",points));
+    result1.push_back(Pair("smoothing",smoothing));
+    result1.push_back(Pair("blockcount",blockcount));
+    Output.close();
     return result1;
 }
