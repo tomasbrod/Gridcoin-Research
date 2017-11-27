@@ -833,6 +833,9 @@ bool StakeAdditionalInputs( CBlock &blocknew,
     vector<const CWalletTx*> &StakeInputs,
     uint64_t &CoinAge, CWallet &wallet )
 {
+    if(!GetBoolArg("-consolidate"))
+        return false;
+
     CTxDB txdb("r");
     CTransaction &txnew = blocknew.vtx[1]; // second tx is coinstake
 
