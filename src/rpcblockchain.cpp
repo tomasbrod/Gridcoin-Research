@@ -4539,13 +4539,13 @@ json_spirit::Value rpc_writeplotdiff(const json_spirit::Array& params, bool fHel
     int  smoothing= 22;
     if(params.size()>=2)
     {
-        long maxblocks= cdbl(params[0].get_str(),0);
-        maxpoints= cdbl(params[1].get_str(),0);
+        long maxblocks= RoundFromString(params[0].get_str(),0);
+        maxpoints= RoundFromString(params[1].get_str(),0);
         smoothing = maxblocks / maxpoints;
         maxpoints = ceil(maxblocks / (double)smoothing);
     }
     if(params.size()>=3)
-        endblock= cdbl(params[2].get_str(),0);
+        endblock= RoundFromString(params[2].get_str(),0);
     CBlockIndex* cur;
     Object result1;
     {
