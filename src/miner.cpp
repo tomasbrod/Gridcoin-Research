@@ -679,7 +679,7 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     "<AVERAGES>amicable numbers,109333.36,37386356;NeuralNetwork,2000000,20000000;</AVERAGES>"
     "<QUOTES>btc,0;grc,0;<NOTES>Superblock created by hand. TomasBrod</NOTES>,0;</QUOTES>"
     "<MAGNITUDES>"
-    "13ba18d2b5b412d81bd8b8fab698d469,16000;"
+    "13ba18d2b5b412d81bd8b8fab698d469,360;"
     "163f049997e8a2dee054d69a7720bf05,360;"
     "1963a6f109ea770c195a0e1afacd2eba,360;"
     "46f64d69eb8c5ee9cd24178b589af83f,360;"
