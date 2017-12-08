@@ -667,6 +667,7 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     */
 
     /* Build a contract */
+    /*
     sb_contract =
     "<AVERAGES>amicable numbers,109333.36,37386356;NeuralNetwork,2000000,20000000;</AVERAGES>"
     "<QUOTES>btc,0;grc,0;<NOTES>Superblock created by hand. TomasBrod</NOTES>,0;</QUOTES>"
@@ -686,9 +687,12 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     "b89807c11a53dfa71cb72b2762d04710,360;"
     "e7f90818e3e87c0bbefe83ad3cfe27e1,360;"
     "</MAGNITUDES>";
+    */
 
     /* Search an eglible address to pas 25% restriction */
+    /*
     bb.GRCAddress = FindAddressForNeural(blocknew);
+    */
 
     const std::string sb_hash = GetQuorumHash(sb_contract);
 
