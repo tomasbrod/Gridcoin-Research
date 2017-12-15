@@ -10,6 +10,7 @@
 #include "cpid.h"
 #include "util.h"
 #include "main.h"
+#include "neuralnet.h"
 
 #include <memory>
 
@@ -34,7 +35,7 @@ bool LessVerbose(int iMax1000);
 
 int64_t GetRSAWeightByBlock(MiningCPID boincblock);
 std::string SignBlockWithCPID(std::string sCPID, std::string sBlockHash);
-std::string qtGetNeuralContract(std::string data);
+
 
 // Some explaining would be appreciated
 class COrphan
@@ -657,9 +658,7 @@ std::string FindAddressForNeural(const CBlock &blocknew)
 }
 
 int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
-{
-    std::string sb_contract;
-
+{    
     if(OutOfSyncByAge())
         return printf("AddNeuralContractOrVote: Out Of Sync\n");
 
@@ -670,7 +669,7 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     */
 
     /* Build a contract */
-    sb_contract =
+    const std::string& sb_contract =
     "<AVERAGES>amicable numbers,109333.36,37386356;NeuralNetwork,2000000,20000000;</AVERAGES>"
     "<QUOTES>btc,0;grc,0;<NOTES>Superblock created by hand. TomasBrod</NOTES>,0;</QUOTES>"
     "<MAGNITUDES>"
