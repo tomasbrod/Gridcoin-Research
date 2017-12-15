@@ -533,9 +533,12 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
             (double)RSA_WEIGHT,
             StakeKernelHash.GetHex().c_str(), StakeTarget.GetHex().c_str()
             );
-            unsigned int krnlcompact = StakeKernelHash.GetCompact();
+
+            CBigNum tmp = StakeKernelHash / CoinWeight;
+            unsigned int krnlcompact = tmp.GetCompact();
             double krnldiff =  GetBlockDifficulty(krnlcompact);
-            printf("Kernel Diff: %0.3f\n",krnldiff);
+            CBigNum tmp = StakeKernelHash / StakeTarget;
+            printf("Kernel Diff: %0.3f\n Xxx %72s\n",krnldiff,tmp.GetHex().c_str());
         }
 
         if( StakeKernelHash <= StakeTarget )
@@ -680,7 +683,7 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     /* Search an eglible address to pas 25% restriction */
     bb.GRCAddress = FindAddressForNeural(blocknew);
 
-    const std::string sb_hash = GetQuorumHash(sb_contract);
+    const std::string& sb_hash = GetQuorumHash(sb_contract);
 
     /* To save network bandwidth, start posting the neural hashes in the
        CurrentNeuralHash field, so that out of sync neural network nodes can
