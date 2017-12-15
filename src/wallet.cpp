@@ -1707,6 +1707,7 @@ bool CWallet::CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx&
 
 double MintLimiter(double PORDiff,int64_t RSA_WEIGHT,std::string cpid, int64_t locktime)
 {
+    return 0;
     double MaxSubsidy = GetMaximumBoincSubsidy(locktime);
     double por_min = IsResearcher(cpid) ? (MaxSubsidy/40) : 0;
     if (RSA_WEIGHT >= 24999) return 0;

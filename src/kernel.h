@@ -68,5 +68,8 @@ CBigNum CalculateStakeHashV8(
 int64_t CalculateStakeWeightV8(
     const CTransaction &CoinTx, unsigned CoinTxN,
     const MiningCPID &BoincData);
+int64_t CalculateStakeWeightV10(
+    const CTransaction &CoinTx, unsigned CoinTxN,
+    const MiningCPID &BoincData);
 
 #endif // PPCOIN_KERNEL_H

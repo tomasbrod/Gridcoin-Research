@@ -825,6 +825,15 @@ int64_t CalculateStakeWeightV8(
     return nValueIn;
 }
 
+int64_t CalculateStakeWeightV10(
+    const CTransaction &CoinTx, unsigned CoinTxN,
+    const MiningCPID &BoincData)
+{
+    int64_t nValueIn = CoinTx.vout[CoinTxN].nValue;
+    nValueIn /= 1;
+    return nValueIn;
+}
+
 // Another version of GetKernelStakeModifier (TomasBrod)
 // Todo: security considerations
 bool FindStakeModifierRev(uint64_t& nStakeModifier,CBlockIndex* pindexPrev)
@@ -860,7 +869,7 @@ bool CheckProofOfStakeV8(
 
     CTransaction *p_coinstake;
 
-    if(Block.nVersion>=8 && Block.nVersion<=9) {
+    if(Block.nVersion>=8 && Block.nVersion<=10) {
         if (!Block.IsProofOfStake())
             return error("CheckProofOfStakeV8() : called on non-coinstake block %s", Block.GetHash().ToString().c_str());
         p_coinstake = &Block.vtx[1];
@@ -906,8 +915,13 @@ bool CheckProofOfStakeV8(
         return error("CheckProofOfStakeV8: unable to find stake modifier");
 
     //Stake refactoring TomasBrod
-    int64_t Weight= CalculateStakeWeightV8(txPrev,txin.prevout.n,boincblock);
+    int64_t Weight;
     CBigNum bnHashProof= CalculateStakeHashV8(blockPrev,txPrev,txin.prevout.n,tx.nTime,StakeModifier,boincblock);
+
+    if(Block.nVersion==10)
+        Weight= CalculateStakeWeightV10(txPrev,txin.prevout.n,boincblock);
+    else
+        Weight= CalculateStakeWeightV8(txPrev,txin.prevout.n,boincblock);
 
     // Base target
     CBigNum bnTarget;

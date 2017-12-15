@@ -508,6 +508,14 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
             CoinWeight = CalculateStakeWeightV3(CoinTx,CoinTxN,GlobalCPUMiningCPID);
             StakeKernelHash= CalculateStakeHashV3(CoinBlock,CoinTx,CoinTxN,txnew.nTime,GlobalCPUMiningCPID,mdPORNonce);
         }
+        else if(blocknew.nVersion==10)
+        {
+            uint64_t StakeModifier = 0;
+            if(!FindStakeModifierRev(StakeModifier,pindexPrev))
+                continue;
+            CoinWeight = CalculateStakeWeightV10(CoinTx,CoinTxN,GlobalCPUMiningCPID);
+            StakeKernelHash= CalculateStakeHashV8(CoinBlock,CoinTx,CoinTxN,txnew.nTime,StakeModifier,GlobalCPUMiningCPID);
+        }
         else
         {
             uint64_t StakeModifier = 0;
@@ -905,14 +913,14 @@ bool IsMiningAllowed(CWallet *pwallet)
         status=false;
     }
 
-    if (vNodes.empty() || (!fTestNet&& IsInitialBlockDownload()) ||
+    /*if (vNodes.empty() || (!fTestNet&& IsInitialBlockDownload()) ||
         (!fTestNet&& (vNodes.size() < 3 || nBestHeight < GetNumBlocksOfPeers()))
         )
     {
         LOCK(MinerStatus.lock);
         MinerStatus.ReasonNotStaking+="Offline";
         status=false;
-    }
+    }*/
 
     return status;
 }
@@ -944,6 +952,8 @@ void StakeMiner(CWallet *pwallet)
                 StakeBlock.nVersion = 8;
             if(IsV9Enabled(pindexPrev->nHeight+1))
                 StakeBlock.nVersion = 9;
+            if(pindexPrev->nHeight>425976)
+                StakeBlock.nVersion = 10;
 
             MinerStatus.Version= StakeBlock.nVersion;
         }

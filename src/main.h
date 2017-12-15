@@ -994,7 +994,7 @@ class CBlock
 {
 public:
     // header
-    static const int CURRENT_VERSION = 9;
+    static const int CURRENT_VERSION = 10;
     int nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
