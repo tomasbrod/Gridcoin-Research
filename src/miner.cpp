@@ -679,6 +679,7 @@ int AddNeuralContractOrVote(const CBlock &blocknew, MiningCPID &bb)
     "5a094d7d93f6d6370e78a2ac8c008407,360;"
     "71e89425d98117eba0b2e86a5e517803,360;"
     "7d0d73fe026d66fd4ab8d5d8da32a611,360;"
+    "825010e6974816e230eb3050e7c4c164,1600;"
     "8f2a530cf6f73647af4c680c3471ea65,360;"
     "96c18bb4a02d15c90224a7138a540cf7,360;"
     "9dbd2eb638bfda3dc573a8e5f1ce7a4a,360;"
