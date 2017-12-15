@@ -534,11 +534,11 @@ bool CreateCoinStake( CBlock &blocknew, CKey &key,
             StakeKernelHash.GetHex().c_str(), StakeTarget.GetHex().c_str()
             );
 
-            CBigNum tmp = StakeKernelHash / CoinWeight;
-            unsigned int krnlcompact = tmp.GetCompact();
+            CBigNum tmp1 = StakeKernelHash / CoinWeight;
+            unsigned int krnlcompact = tmp1.GetCompact();
             double krnldiff =  GetBlockDifficulty(krnlcompact);
-            CBigNum tmp = StakeKernelHash / StakeTarget;
-            printf("Kernel Diff: %0.3f\n Xxx %72s\n",krnldiff,tmp.GetHex().c_str());
+            CBigNum tmp2 = StakeKernelHash / StakeTarget;
+            printf("Kernel Diff: %0.3f\n Xxx %72s\n",krnldiff,tmp2.GetHex().c_str());
         }
 
         if( StakeKernelHash <= StakeTarget )
