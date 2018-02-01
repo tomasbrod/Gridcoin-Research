@@ -3541,6 +3541,14 @@ bool ReorganizeChain(CTxDB& txdb, unsigned &cnt_dis, unsigned &cnt_con, CBlock &
         }
     }
 
+    /* now that we are at a tally point, move to the previous block if possible.
+     * This will cause the next tally to move back to the previous
+     * TALLY_GRANULARITY. Without this we would reject blocks if we try to
+     * reorganize to a point between a superblock and a tally point.
+     */
+    if(pcommon->pprev)
+        pcommon = pcommon->pprev;
+
     /* disconnect blocks */
     if(pcommon!=pindexBest)
     {
