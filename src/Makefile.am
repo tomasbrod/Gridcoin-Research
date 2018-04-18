@@ -70,7 +70,7 @@ GRIDCOIN_CORE_H = \
 	serialize.h \
 	strlcpy.h \
 	sync.h \
-    tally.h \
+        tally.h \
 	threadsafety.h \
 	tinyformat.h \
 	txdb.h \
@@ -129,7 +129,7 @@ GRIDCOIN_CONTRACT_H = \
 
 GRIDCOIN_CONTRACT_CPP = \
     contract/polls.cpp \
-	contract/contract.cpp
+    contract/contract.cpp
 
 obj/build.h: FORCE
 	@$(MKDIR_P) $(builddir)/obj
@@ -153,7 +153,7 @@ GRIDCOIN_JSON_H = \
 # This library *must* be included to make sure that the glibc
 # backward-compatibility objects and their sanity checks are linked.
 libgridcoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(GRIDCOIN_INCLUDES)
-libgridcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) 
+libgridcoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libgridcoin_util_a_SOURCES = $(GRIDCOIN_CORE_CPP) $(GRIDCOIN_CONTRACT_CPP) \
     grcrestarter_stub.cpp \
     neuralnet_stub.cpp \
