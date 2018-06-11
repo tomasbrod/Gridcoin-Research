@@ -8850,3 +8850,31 @@ bool IsResearcher(const std::string& cpid)
     return cpid.length() == 32;
 }
 
+int GetRequiredBlockVersion(CBlockIndex* pindex)
+{
+    /*
+    On one hand we would like to have consensus activated fork.
+    For security, once a new version is longer than x blocks, it should not be possible to reorganize back.
+    Eg: reject reorganzie accross versions if more than 100 new-version blocks.
+    What with unsynchronised nodes?
+    */
+    if(pindex->nVersion < 9)
+    {
+        int nHeight = pindex->nHeight + 1;
+        if(IsV9Enabled(nHeight))
+            return 9;
+        if(IsV8Enabled(nHeight))
+            return 8;
+        if(IsProtocolV2(nHeight))
+            return 7;
+        return 6; //TODO: verify value
+    }
+    else
+    {
+        AppCacheEntry oVersion= ReadCache("protocol","blockversion");
+        int nVersion = atoi(oVersion.value);
+        if (nVersion>0)
+            return nVersion;
+        return pindexPrev->nVersion;
+    }
+}
