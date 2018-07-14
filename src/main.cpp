@@ -8612,6 +8612,7 @@ int64_t ComputeResearchAccrual(int64_t nTime, std::string cpid, std::string oper
     // ResearchAge: If the accrual age is > 20 days, add in the midpoint lifetime average magnitude to ensure the overall avg magnitude accurate:
     if (iRABlockSpan > (int)(BLOCKS_PER_DAY*20))
     {
+        if(!bVerifyingBlock && dAvgMag > 60) { dAvgMag = 60; }
             AvgMagnitude = (pHistorical->nMagnitude + dAvgMag + dCurrentMagnitude) / 3;
     }
     else
