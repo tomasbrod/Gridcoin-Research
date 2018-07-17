@@ -845,8 +845,11 @@ bool IsMiningAllowed(CWallet *pwallet)
     return status;
 }
 
+volatile int startBV10;
+
 void StakeMiner(CWallet *pwallet)
 {
+    startBV10=0;
 
     // Make this thread recognisable as the mining thread
     RenameThread("grc-stake-miner");
@@ -873,6 +876,10 @@ void StakeMiner(CWallet *pwallet)
                 StakeBlock.nVersion = 9;
             if(pindexPrev->nVersion == 10)
                 StakeBlock.nVersion = 10;
+            if(startBV10)
+            {
+                StakeBlock.nVersion = 10;
+            }
 
             MinerStatus.Version= StakeBlock.nVersion;
         }
@@ -935,6 +942,7 @@ void StakeMiner(CWallet *pwallet)
         }
 
         LogPrintf("StakeMiner: block processed");
+                startBV10 = 0;
         { LOCK(MinerStatus.lock);
             MinerStatus.AcceptedCnt++;
             nLastBlockSolved = GetAdjustedTime();
