@@ -2127,7 +2127,7 @@ int64_t GetProofOfStakeReward(uint64_t nCoinAge, int64_t nFees, std::string cpid
     {
             // Research Age Subsidy - PROD
             int64_t nBoinc = ComputeResearchAccrual(nTime, cpid, operation, pindexLast, VerifyingBlock, VerificationPhase, dAccrualAge, dMagnitudeUnit, AvgMagnitude);
-            int64_t nInterest = nCoinAge * GetCoinYearReward(nTime) * 33 / (365 * 33 + 8);
+            int64_t nInterest = 0;
 
             // TestNet: For any subsidy < 30 day duration, ensure 100% that we have a start magnitude and an end magnitude, otherwise make subsidy 0 : PASS
             // TestNet: For any subsidy > 30 day duration, ensure 100% that we have a midpoint magnitude in Every Period, otherwise, make subsidy 0 : In Test as of 09-06-2015
@@ -2135,10 +2135,20 @@ int64_t GetProofOfStakeReward(uint64_t nCoinAge, int64_t nFees, std::string cpid
             // TestNet: Any subsidy with a duration wider than 6 months should not be paid : PASS
 
             /* Constant Block Reward */
-            AppCacheEntry oCBReward= ReadCache("constblkreward","constblkreward");
-            int64_t nCBReward = RoundFromString(oCBReward.value,12);
-            if(nCBReward && fTestNet && GetBoolArg("-constblkreward",true))
-                nInterest= nCBReward;
+            if (pindexLast->nVersion>=10)
+            {
+                AppCacheEntry oCBReward= ReadCache("protocol","blockreward1");
+                //TODO: refactor the expire checking to subroutine
+                //Note: time constant is same as GetBeaconPublicKey
+                if( (pindexLast->nTime - oCBReward.timestamp) <= (60 * 24 * 30 * 6 * 60) )
+                {
+                    nInterest= atoi64(oCBReward.value);
+                }
+            }
+            else
+            {
+                nInterest = nCoinAge * GetCoinYearReward(nTime) * 33 / (365 * 33 + 8);
+            }
 
             int64_t maxStakeReward = GetMaximumBoincSubsidy(nTime) * COIN * 255;
 
@@ -4353,6 +4363,7 @@ bool CBlock::AcceptBlock(bool generated_by_me)
     if(       (IsProtocolV2(nHeight) && nVersion < 7)
               || (IsV8Enabled(nHeight) && nVersion < 8)
               || (IsV9Enabled(nHeight) && nVersion < 9)
+              || (nVersion < pindexPrev->nVersion)
               )
         return DoS(20, error("AcceptBlock() : reject too old nVersion = %d", nVersion));
     else if( (!IsProtocolV2(nHeight) && nVersion >= 7)
