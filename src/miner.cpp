@@ -942,7 +942,6 @@ void StakeMiner(CWallet *pwallet)
         }
 
         LogPrintf("StakeMiner: block processed");
-                startBV10 = 0;
         { LOCK(MinerStatus.lock);
             MinerStatus.AcceptedCnt++;
             nLastBlockSolved = GetAdjustedTime();
