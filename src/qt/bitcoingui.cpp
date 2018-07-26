@@ -622,7 +622,6 @@ void BitcoinGUI::createMenuBar()
 
 #ifdef WIN32  // actions in this menu are on .NET dll side only show this menu for windows
     QMenu *qmAdvanced = appMenuBar->addMenu(tr("&Advanced"));
-
     qmAdvanced->addAction(miningAction);
 #endif /* defined(WIN32) */
 

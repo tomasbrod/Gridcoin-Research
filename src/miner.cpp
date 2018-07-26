@@ -849,7 +849,7 @@ volatile int startBV10;
 
 void StakeMiner(CWallet *pwallet)
 {
-    startBV10=0;
+    startBV10= GetBoolArg("-startv10", false);
 
     // Make this thread recognisable as the mining thread
     RenameThread("grc-stake-miner");
